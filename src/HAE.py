@@ -304,7 +304,7 @@ class GlobalNormalization1(torch.nn.Module):
 
 
 
-class HQA(pl.LightningModule):
+class HAE(pl.LightningModule):
 
     VISUALIZATION_DIR = 'vis'
 
@@ -373,7 +373,7 @@ class HQA(pl.LightningModule):
             self.output_dir = output_dir
             try:
                 os.mkdir(output_dir)
-                for subdir in HQA.SUBDIRS:
+                for subdir in HAE.SUBDIRS:
                     path = f'{output_dir}/{subdir}'
                     os.mkdir(path)
                     print(path)
@@ -395,8 +395,6 @@ class HQA(pl.LightningModule):
                         torch.zeros(original.shape[0], original.shape[2], device=self.device)
                 ).sum(dim=1).mean()
         return cos_loss
-
-
 
 
 
@@ -640,11 +638,11 @@ class HQA(pl.LightningModule):
 
     @classmethod
     def init_higher(cls, prev_model, **kwargs):
-        model = HQA(prev_model.codebook_dim, prev_model=prev_model, **kwargs)
+        model = HAE(prev_model.codebook_dim, prev_model=prev_model, **kwargs)
         model.prev_model.eval()
         return model
 
     @classmethod
     def init_bottom(cls, input_feat_dim, **kwargs):
-        model = HQA(input_feat_dim,prev_model=None, **kwargs)
+        model = HAE(input_feat_dim,prev_model=None, **kwargs)
         return model
