@@ -2,6 +2,7 @@ import logging
 from zenml import step
 from torch.utils.data import DataLoader
 from src.HAE import *
+import torch
 
 @step
 def train_model(dl_train: DataLoader,

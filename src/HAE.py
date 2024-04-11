@@ -428,14 +428,11 @@ class HAE(pl.LightningModule):
     def recon_loss(self, orig, recon):
         return F.mse_loss(orig, recon, reduction='none').sum(dim=(1,2)).mean()
 
-    
-
     def decay_temp_linear(self, step, total_steps, temp_base, temp_min=0.001):
 
         factor = 1.0 - (step/total_steps)
 
         return temp_min + (temp_base - temp_min) * factor
-
 
 
     def training_step(self,batch, batch_idx):
