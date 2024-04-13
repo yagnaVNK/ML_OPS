@@ -171,52 +171,28 @@ class Decoder2(nn.Module):
         x = x.float()
         return self.blocks(x)
 
-
-
-
-
 class Upsample(nn.Module):
 
     def __init__(self, scale_factor=2):
-
         super().__init__()
-
         self.scale_factor = scale_factor
 
-
-
     def forward(self, x):
-
         return F.interpolate(x, scale_factor=self.scale_factor)
-
-
-
-
 
 class ResBlock(nn.Module):
 
     def __init__(self, in_channel, channel):
-
         super().__init__()
-
         self.conv_1 = nn.Conv1d(in_channel, channel, kernel_size=3, padding=1)
-
         self.conv_2 = nn.Conv1d(channel, in_channel, kernel_size=3, padding=1)
 
-
-
     def forward(self, inp):
-
         x = self.conv_1(inp)
-
         x = mish(x)
-
         x = self.conv_2(x)
-
         x = x + inp
-
         return mish(x)
-
 
 
 class GlobalNormalization1(torch.nn.Module):
@@ -224,15 +200,10 @@ class GlobalNormalization1(torch.nn.Module):
         super().__init__()
 
         self.feature_dim = feature_dim
-
         self.register_buffer("running_ave", torch.zeros(1, self.feature_dim, 1))
-
         self.register_buffer("total_frames_seen", torch.Tensor([0]))
-
         self.scale = scale
-
         if self.scale:
-
             self.register_buffer("running_sq_diff", torch.zeros(1, self.feature_dim, 1))
 
 
@@ -245,92 +216,55 @@ class GlobalNormalization1(torch.nn.Module):
                 self.running_ave * self.total_frames_seen + inputs.sum(dim=(0, 2), keepdim=True)
             ) / (self.total_frames_seen + frames_in_input)
             if self.scale:
-
                 # Update the sum of the squared differences between inputs and mean
-
                 self.running_sq_diff = self.running_sq_diff + (
-
                     (inputs - self.running_ave) * (inputs - updated_running_ave)
-
                 ).sum(dim=(0, 2), keepdim=True)
-
-
-
             self.running_ave = updated_running_ave
-
             self.total_frames_seen = self.total_frames_seen + frames_in_input
-
         else:
-
             return inputs
 
 
-
         if self.scale:
-
             std = torch.sqrt(self.running_sq_diff / self.total_frames_seen)
-
             inputs = (inputs - self.running_ave) / std
-
         else:
-
             inputs = inputs - self.running_ave
-
-
-
         return inputs
 
 
 
     def unnorm(self, inputs):
-
         if self.scale:
-
             std = torch.sqrt(self.running_sq_diff / self.total_frames_seen)
-
             inputs = inputs*std + self.running_ave
-
         else:
-
             inputs = inputs + self.running_ave
-
-
 
         return inputs
 
-    
-
-
-
-
+  
 
 class HAE(pl.LightningModule):
 
     VISUALIZATION_DIR = 'vis'
-
     SUBDIRS=[VISUALIZATION_DIR]
 
     def __init__(
         self,
         input_feat_dim,
         prev_model=None,
-        codebook_slots=256,
         codebook_dim=256,
         enc_hidden_dim=16,
         dec_hidden_dim=32,
-        gs_temp=0.667,
         num_res_blocks=0,
         lr=4e-4,
         decay=True,
         clip_grads=False,
-        codebook_init='normal',
-        output_dir = "CodeCos2R",
         layer = 0 ,
-        KL_coeff = 0.2,
-        CL_coeff = 0.001,
         Cos_coeff = 0.7,
         batch_norm = 1,
-        reset_choice = 0,
         cos_reset = 1,
         compress = 2
     ):
@@ -338,7 +272,7 @@ class HAE(pl.LightningModule):
         self.save_hyperparameters(ignore=['prev_model'])
         self.prev_model = prev_model
         if compress ==2:
-            self.encoder = Encoder(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=True)
+            self.encoder = Encoder(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=batch_norm)
             self.decoder = Decoder(
                 codebook_dim,
                 input_feat_dim,
@@ -347,7 +281,7 @@ class HAE(pl.LightningModule):
                 num_res_blocks=num_res_blocks
             )
         else:
-            self.encoder = Encoder2(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=True)
+            self.encoder = Encoder2(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=batch_norm)
             self.decoder = Decoder2(
                 codebook_dim,
                 input_feat_dim,
@@ -368,19 +302,7 @@ class HAE(pl.LightningModule):
         # Tells pytorch lightinig to use our custom training loop
         self.automatic_optimization = False
         
-        self.create_output = output_dir is not None 
-        if self.create_output:
-            self.output_dir = output_dir
-            try:
-                os.mkdir(output_dir)
-                for subdir in HAE.SUBDIRS:
-                    path = f'{output_dir}/{subdir}'
-                    os.mkdir(path)
-                    print(path)
-                    os.mkdir(f'{path}/layer{len(self)}')
-            except OSError:
-                pass
-
+        
     def forward(self, x, soft = True):
         if x.dtype != torch.float32:
             x = x.float()
@@ -396,15 +318,12 @@ class HAE(pl.LightningModule):
                 ).sum(dim=1).mean()
         return cos_loss
 
-
-
-
     def get_training_loss(self, x):
         recon, z_e_lower, z_e = self(x)
         recon_loss = self.recon_loss(z_e_lower, recon)
         cos_loss = self.cos_loss(z_e_lower, recon)
         dims = np.prod(recon.shape[1:]) # orig_w * orig_h * num_channels
-        loss = recon_loss/dims
+        loss = recon_loss/dims 
         if not self.cos_reset or len(self) == 1:
             # Cosine reset is off OR Cosine reset is on and we are training layer 0
             loss += self.Cos_coeff*cos_loss/dims
@@ -429,9 +348,7 @@ class HAE(pl.LightningModule):
         return F.mse_loss(orig, recon, reduction='none').sum(dim=(1,2)).mean()
 
     def decay_temp_linear(self, step, total_steps, temp_base, temp_min=0.001):
-
         factor = 1.0 - (step/total_steps)
-
         return temp_min + (temp_base - temp_min) * factor
 
 
@@ -459,163 +376,94 @@ class HAE(pl.LightningModule):
 
         return loss
 
-
-
     def validation_step(self, val_batch, batch_idx):
-
         x, _ = val_batch
-
         cos_loss, recon_loss, loss = self.get_validation_loss(x)
 
         self.log("val_loss", loss, prog_bar=True, sync_dist=True)
-
         self.log("val_cos_loss", cos_loss, prog_bar=False,sync_dist=True)
-
         self.log("val_recon", recon_loss, prog_bar=False, sync_dist=True)
 
         return loss
 
-    
-
     def test_step(self, test_batch, batch_idx):
 
         x,_ = test_batch
-
         cos_loss, recon_loss, loss = self.get_validation_loss(x)
 
         self.log("tst_loss", loss, prog_bar=False)
-
         self.log("tst_cos_loss", cos_loss, prog_bar=False)
-
         self.log("tst_recon", recon_loss, prog_bar=False)
 
         return loss    
 
-
-
-    
-
     def configure_optimizers(self):
-
         optimizer = torch.optim.Adam(self.parameters(), lr=4e-4)
-
         lr_scheduler = FlatCA(optimizer, steps=1, eta_min=4e-5)
 
         return [optimizer], [lr_scheduler]
 
-    
-
     def encode_lower(self, x):
-
         if self.prev_model is None:
-
             return x
-
         else:
-
             with torch.no_grad():
-
                 z_e_lower = self.prev_model.encode(x)
-
                 z_e_lower = self.normalize(z_e_lower)
-
             return z_e_lower
 
     def encode(self, x):
-
         with torch.no_grad():
-
             z_e_lower = self.encode_lower(x)
-
             z_e = self.encoder(z_e_lower)
-
         return z_e
 
-        
 
     def decode_lower(self, z_q_lower):
-
         with torch.no_grad():
-
             recon = self.prev_model.decode(z_q_lower)           
-
         return recon
-
-
 
     def decode(self, z_q):
-
         with torch.no_grad():
-
             if self.prev_model is not None:
-
                 z_e_u = self.normalize.unnorm(self.decoder(z_q))
-
                 z_q_lower_tilde = self.prev_model.quantize(z_e_u)
-
                 recon = self.decode_lower(z_q_lower_tilde)
-
             else:
-
                 recon = self.decoder(z_q)
-
         return recon
 
-
-
     def quantize(self, z_e):
-
         return z_e
 
-    
 
     def reconstruct_average(self, x, num_samples=10):
-
         """Average over stochastic edecodes"""
 
         b, c, h = x.shape
-
         result = torch.empty((num_samples, b, c, h))#.to(device)
 
-
-
         for i in range(num_samples):
-
             result[i] = self.decode(self.quantize(self.encode(x)))
 
         return result.mean(0)
 
-
-
     def reconstruct(self, x):
-
         return self.decode(self.quantize(self.encode(x)))
 
-    
-
-    
 
     def reconstruct_from_z_e(self, z_e):
-
         return self.decode(self.quantize(z_e))
 
     
-
     def __len__(self):
-
         i = 1
-
         layer = self
-
         while layer.prev_model is not None:
-
             i += 1
-
             layer = layer.prev_model
-
         return i
-
-
 
     def __getitem__(self, idx):
         max_layer = len(self) - 1
@@ -631,7 +479,6 @@ class HAE(pl.LightningModule):
             for name, param in module.named_parameters(recurse=recurse):
                 yield param
 
-    
 
     @classmethod
     def init_higher(cls, prev_model, **kwargs):
