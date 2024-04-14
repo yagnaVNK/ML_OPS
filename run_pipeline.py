@@ -1,13 +1,14 @@
 from pipelines.training_pipeline import training_pipeline
-import mlflow
+
 
 if __name__  == "__main__":
 
+    
     iq_samples = 1024
     samples_per_class = 1000
     batch_size = 32
-    Hae_epochs = 3
-    Hqa_epochs = 3
+    Hae_epochs = 15
+    Hqa_epochs = 15
     classifier_epochs = 15
     trainbool = False
     eff_net_PATH = f"./src/classifiers/{classifier_epochs}epochs_classifier.pt"
@@ -17,7 +18,7 @@ if __name__  == "__main__":
     classes = ["4ask","8pam","16psk","32qam_cross","2fsk","ofdm-256"]
     enc_hidden_sizes = [16, 16, 32, 64, 128]
     dec_hidden_sizes = [16, 64, 256, 512, 1024]
-    codebook_slots = 128
+    codebook_slots = 64
     codeword_dim = 64
     codebook_init = "normal"
     batch_norm = 1

@@ -21,8 +21,8 @@ import argparse
 from lightning.pytorch.loggers import TensorBoardLogger
 from torchsummary import summary
 from torch.nn import GELU
-
 from sklearn.manifold import TSNE
+import mlflow
 
 
 def mish(x):
@@ -57,7 +57,6 @@ class FlatCA(_LRScheduler):
                     / 2
                 )
             return lr_list
-
 
 
 class Encoder(nn.Module):

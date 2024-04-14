@@ -1,5 +1,5 @@
 import math
-
+import mlflow
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -558,6 +558,8 @@ class HQA(pl.LightningModule):
         self.log("recon", recon_loss, prog_bar=True)
         self.log("kl", kl_loss, prog_bar=True)
         self.log("commit", commit_loss, prog_bar=True)
+
+        
         return loss
 
 

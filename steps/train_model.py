@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from src.HAE import *
 from src.HQA import *
 from lightning.pytorch.loggers import MLFlowLogger
+import mlflow
 
 @step(enable_cache=True)
 def train_HAE(dl_train: DataLoader,
@@ -28,6 +29,7 @@ def train_HAE(dl_train: DataLoader,
     dec_hidden_sizes = dec_hidden_sizes
     layers = layers
     batch_norm = batch_norm
+    
     for i in range(layers): 
         print(f'training Layer {i}')
         print('==============================================')
@@ -66,6 +68,26 @@ def train_HAE(dl_train: DataLoader,
              accelerator = 'gpu',
              num_sanity_val_steps=0,
         )
+        mlflow_logger = MLFlowLogger(experiment_name="HAE Training", run_name=f"HAE Layer {i}")
+        mlflow_logger.log_hyperparams({
+            "layer": i,
+            "enc_hidden_size": enc_hidden_sizes[i],
+            "dec_hidden_size": dec_hidden_sizes[i],
+            "num_res_blocks": num_res_blocks,
+            "batch_norm": batch_norm,
+            "cos_reset": cos_reset,
+            "compress": compress,
+            "codebook_dim": codeword_dim,
+            "Cos_coeff": Cos_coeff,
+            "lr": hae_lr,
+        })
+        
+        trainer = pl.Trainer(max_epochs=epochs, 
+             logger=mlflow_logger,  
+             devices=1,
+             accelerator='gpu',
+             num_sanity_val_steps=0,
+        )
         trainer.fit(hae.float(), dl_train, dl_val)
         hae_prev = hae.eval()
     return hae
@@ -96,6 +118,7 @@ def train_HQA(dl_train: DataLoader,
     """
     
     """
+    
     for i in range(layers): 
         print(f'training Layer {i}')
         print('==============================================')
@@ -145,12 +168,30 @@ def train_HQA(dl_train: DataLoader,
         hqa.encoder = model[i].encoder
         hqa.decoder = model[i].decoder
         print("loaded the encoder and decoder pretrained models")
-        
+
+        mlflow_logger = MLFlowLogger(experiment_name="HQA Training", run_name=f"HQA Layer {i}")
+        mlflow_logger.log_hyperparams({
+            "layer": i,
+            "enc_hidden_size": enc_hidden_sizes[i],
+            "dec_hidden_size": dec_hidden_sizes[i],
+            "num_res_blocks": num_res_blocks,
+            "KL_coeff": KL_coeff,
+            "CL_coeff": CL_coeff,
+            "Cos_coeff": Cos_coeff,
+            "batch_norm": batch_norm,
+            "codebook_init": codebook_init,
+            "codeword_reset": codeword_reset,
+            "codebook_slots": codebook_slots,
+            "codebook_dim": codeword_dim,
+            "lr": hqa_lr,
+            "cos_reset": cos_reset,
+            "compress": compress,
+        })
         trainer = pl.Trainer(max_epochs=epochs, 
-             logger=None,  
-             devices=1,
-             accelerator = 'gpu',
-             num_sanity_val_steps=0,
+            logger=mlflow_logger,  
+            devices=1,
+            accelerator = 'gpu',
+            num_sanity_val_steps=0,
         )
         trainer.fit(hqa.float(), dl_train, dl_val)
         hqa_prev = hqa.eval()
