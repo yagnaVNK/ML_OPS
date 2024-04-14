@@ -3,3 +3,5 @@
 /HAE_ml_runs
 /lightning_logs
 /codebooks
+*.pt
+/src/classifiers
