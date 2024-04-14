@@ -6,13 +6,13 @@ if __name__  == "__main__":
     iq_samples = 1024
     samples_per_class = 1000
     batch_size = 32
-    Hae_epochs = 2
-    Hqa_epochs = 2
+    Hae_epochs = 30
+    Hqa_epochs = 30
     classifier_epochs = 15
     trainbool = False
     eff_net_PATH = f"./src/classifiers/{classifier_epochs}epochs_classifier.pt"
 
-    layers = 2
+    layers = 5
     input_feature_dim = 2
     classes = ["4ask","8pam","16psk","32qam_cross","2fsk","ofdm-256"]
     enc_hidden_sizes = [16, 16, 32, 64, 128, 256]

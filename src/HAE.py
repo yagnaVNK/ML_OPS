@@ -303,8 +303,23 @@ class HAE(pl.LightningModule):
         mlflow.set_experiment("training_pipeline")
         
         mlflow.start_run(run_name = f"HAE Layer {self.layer}",nested=True)
-        
-        
+        # Log hyperparameters
+        mlflow.log_params({
+            "input_feat_dim": input_feat_dim,
+            "codebook_dim": codebook_dim,
+            "enc_hidden_dim": enc_hidden_dim,
+            "dec_hidden_dim": dec_hidden_dim,
+            "num_res_blocks": num_res_blocks,
+            "lr": lr,
+            "decay": decay,
+            "clip_grads": clip_grads,
+            "layer": layer,
+            "Cos_coeff": Cos_coeff,
+            "batch_norm": batch_norm,
+            "cos_reset": cos_reset,
+            "compress": compress
+        })
+                
 
     def forward(self, x, soft = True):
         if x.dtype != torch.float32:
