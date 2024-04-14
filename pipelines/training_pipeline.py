@@ -5,7 +5,6 @@ from steps.train_model import *
 from steps.train_classifier import *
 from typing import Tuple
 from typing_extensions import Annotated
-from zenml.materializers.base_materializer import BaseMaterializerMeta
 
 
 @pipeline(enable_artifact_metadata=True,enable_step_logs=True)

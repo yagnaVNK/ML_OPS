@@ -1,14 +1,13 @@
 from pipelines.training_pipeline import training_pipeline
-
+from zenml.client import Client
 
 if __name__  == "__main__":
-
-    
+    print(Client().active_stack.experiment_tracker.get_tracking_uri())
     iq_samples = 1024
     samples_per_class = 1000
     batch_size = 32
-    Hae_epochs = 15
-    Hqa_epochs = 15
+    Hae_epochs = 2
+    Hqa_epochs = 2
     classifier_epochs = 15
     trainbool = False
     eff_net_PATH = f"./src/classifiers/{classifier_epochs}epochs_classifier.pt"
@@ -16,8 +15,8 @@ if __name__  == "__main__":
     layers = 2
     input_feature_dim = 2
     classes = ["4ask","8pam","16psk","32qam_cross","2fsk","ofdm-256"]
-    enc_hidden_sizes = [16, 16, 32, 64, 128]
-    dec_hidden_sizes = [16, 64, 256, 512, 1024]
+    enc_hidden_sizes = [16, 16, 32, 64, 128, 256]
+    dec_hidden_sizes = [16, 64, 256, 512, 1024, 2048]
     codebook_slots = 64
     codeword_dim = 64
     codebook_init = "normal"
@@ -58,7 +57,7 @@ if __name__  == "__main__":
                     hqa_Cos_coeff = hqa_Cos_coeff,
                     KL_coeff = KL_coeff,
                     CL_coeff = CL_coeff,
-                    visual_dir = "./CodeCos2R/",
+                    visual_dir = "./codebooks/",
                     eff_net_path = eff_net_PATH,
                     trainbool = trainbool)
     

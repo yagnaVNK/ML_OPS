@@ -300,8 +300,10 @@ class HAE(pl.LightningModule):
     
         # Tells pytorch lightinig to use our custom training loop
         self.automatic_optimization = False
+        mlflow.set_experiment("training_pipeline")
         
-        
+        mlflow.start_run(run_name = f"HAE Layer {self.layer}",nested=True)
+
     def forward(self, x, soft = True):
         if x.dtype != torch.float32:
             x = x.float()
@@ -309,6 +311,9 @@ class HAE(pl.LightningModule):
         z_e = self.encoder(z_e_lower)
         z_e_lower_tilde = self.decoder(z_e)
         return z_e_lower_tilde, z_e_lower, z_e
+        
+    def on_fit_end(self):
+        mlflow.end_run()
         
     def cos_loss(self, original, reconstruction):
         cos_loss=torch.max(
@@ -372,6 +377,9 @@ class HAE(pl.LightningModule):
         self.log("loss", loss, prog_bar=True)
         self.log("cos_loss", cos_loss, prog_bar=True)
         self.log("recon", recon_loss, prog_bar=True)
+        mlflow.log_metric("loss", loss, step=self.global_step)
+        mlflow.log_metric("cos_loss", cos_loss, step=self.global_step)
+        mlflow.log_metric("recon", recon_loss, step=self.global_step)
 
         return loss
 
@@ -382,7 +390,9 @@ class HAE(pl.LightningModule):
         self.log("val_loss", loss, prog_bar=True, sync_dist=True)
         self.log("val_cos_loss", cos_loss, prog_bar=False,sync_dist=True)
         self.log("val_recon", recon_loss, prog_bar=False, sync_dist=True)
-
+        mlflow.log_metric("val_loss", loss, step=batch_idx*(self.current_epoch+1))
+        mlflow.log_metric("val_cos_loss", cos_loss, step=batch_idx*(self.current_epoch+1))
+        mlflow.log_metric("val_recon", recon_loss, step=batch_idx*(self.current_epoch+1))
         return loss
 
     def test_step(self, test_batch, batch_idx):

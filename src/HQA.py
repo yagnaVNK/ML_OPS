@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 from torch.distributions import RelaxedOneHotCategorical, Normal, Categorical
 from torch.optim.lr_scheduler import _LRScheduler
 from torch.optim.optimizer import Optimizer
-
+from zenml.client import Client
 from torchvision import transforms
 from torchvision.datasets import MNIST
 
@@ -386,7 +386,10 @@ class HQA(pl.LightningModule):
         
         # Tells pytorch lightinig to use our custom training loop
         self.automatic_optimization = False
-        
+        mlflow.set_experiment("training_pipeline")
+        mlflow.start_run(run_name = f"HQA Layer {self.layer}",nested=True)
+
+
         self.init_codebook(codebook_init,self.dataloader)
         self.create_output = output_dir is not None 
         if self.create_output:
@@ -473,7 +476,10 @@ class HQA(pl.LightningModule):
         z_e_lower_tilde, z_e_lower, z_q, z_e, indices, kl, commit_los =self(x, soft=False)
         cos_loss=torch.max(1-F.cosine_similarity(z_e_lower, z_e_lower_tilde, dim = 1),torch.zeros(z_e_lower.shape[0], z_e_lower.shape[2], device=self.device)).sum(dim=1).mean()
         return cos_loss
-
+    
+    def on_fit_end(self):
+        mlflow.end_run()
+        
 
     def get_training_loss(self, x):
         recon, recon_test, lll, _, indices, KL, commit_loss = self(x)
@@ -500,23 +506,23 @@ class HQA(pl.LightningModule):
         factor = 1.0 - (step/total_steps)
         return temp_min + (temp_base - temp_min) * factor
 
-    def training_step(self,batch, batch_idx):
-        x,_ = batch
+    def training_step(self, batch, batch_idx):
+        x, _ = batch
         # anneal temperature
         if self.decay:
-                self.codebook.temperature = self.decay_temp_linear(step = self.global_step+1, 
-                                                                   total_steps = self.trainer.max_epochs * self.trainer.num_training_batches, 
-                                                                   temp_base= self.codebook.temperature)
+            self.codebook.temperature = self.decay_temp_linear(step=self.global_step+1, 
+                                                            total_steps=self.trainer.max_epochs * self.trainer.num_training_batches, 
+                                                            temp_base=self.codebook.temperature)
         
         optimizer = self.optimizers()
         scheduler = self.lr_schedulers()
-    
+
         cos_loss, recon_loss, loss, indices, kl_loss, commit_loss = self.get_training_loss(x.float())
-    
+
         optimizer.zero_grad()
-        
+
         self.manual_backward(loss)
-        
+
         if self.clip_grads:
             nn.utils.clip_grad_norm_(self.parameters(), 1.0)
 
@@ -525,32 +531,31 @@ class HQA(pl.LightningModule):
 
         indices_onehot = F.one_hot(indices, num_classes=self.codebook.codebook_slots).float()
         self.code_count = self.code_count + indices_onehot.sum(dim=(0, 1))
-
-        
         if batch_idx > 0 and batch_idx % 25 == 0:
             self.reset_least_used_codeword()
-            if self.create_output and self.codebook_resets % 30 == 0:
+            if self.create_output and self.codebook_resets % 1 == 0:
                 tsne = self.visualize_codebook()
                 df = pd.DataFrame(tsne,
                     columns=['tsne-2d-one', 'tsne-2d-two'])
                 y = [i for i in range(len(df))]
 
-                plt.figure(figsize=(16,10))
-                scplot=sns.scatterplot(
+                plt.figure(figsize=(16, 10))
+                scplot = sns.scatterplot(
                     x="tsne-2d-one", y="tsne-2d-two",
-                    #hue=y,
                     color='black',
-                    #palette=sns.color_palette("hls", 10),
                     data=df,
                     legend=False,
-                    #alpha=0.3,
-                    #s=20
                 )
 
-                if ( not os.path.exists(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}')):
+                if not os.path.exists(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}'):
                     os.makedirs(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}')
                 fig = scplot.get_figure()
-                fig.savefig(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}/reset{self.codebook_resets}.png')
+                plot_path = f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}/reset{self.codebook_resets}.png'
+                fig.savefig(plot_path)
+                #print("coming here")
+                # Log the scatterplot as an artifact in MLflow
+                mlflow.log_artifact(plot_path)
+                
                 plt.close()
 
         self.log("loss", loss, prog_bar=True)
@@ -559,7 +564,12 @@ class HQA(pl.LightningModule):
         self.log("kl", kl_loss, prog_bar=True)
         self.log("commit", commit_loss, prog_bar=True)
 
-        
+        mlflow.log_metric("loss", loss, step=self.global_step)
+        mlflow.log_metric("cos_loss", cos_loss, step=self.global_step)
+        mlflow.log_metric("recon", recon_loss, step=self.global_step)
+        mlflow.log_metric("kl", kl_loss, step=self.global_step)
+        mlflow.log_metric("commit", commit_loss, step=self.global_step)
+
         return loss
 
 
@@ -597,6 +607,12 @@ class HQA(pl.LightningModule):
         self.log("val_recon", recon_loss, prog_bar=False, sync_dist=True)
         self.log("val_kl", kl_loss, prog_bar=False,  sync_dist=True)
         self.log("val_commit", commit_loss, prog_bar=False,sync_dist=True)
+
+        mlflow.log_metric("val_loss", loss, step=batch_idx*(self.current_epoch+1))
+        mlflow.log_metric("val_cos_loss", cos_loss, step=batch_idx*(self.current_epoch+1))
+        mlflow.log_metric("val_recon", recon_loss, step=batch_idx*(self.current_epoch+1))
+        mlflow.log_metric("val_kl", kl_loss, step=batch_idx*(self.current_epoch+1))
+        mlflow.log_metric("val_commit", commit_loss, step=batch_idx*(self.current_epoch+1))
         return loss
     
     def test_step(self, test_batch, batch_idx):
