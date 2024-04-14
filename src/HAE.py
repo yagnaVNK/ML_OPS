@@ -303,6 +303,8 @@ class HAE(pl.LightningModule):
         mlflow.set_experiment("training_pipeline")
         
         mlflow.start_run(run_name = f"HAE Layer {self.layer}",nested=True)
+        
+        
 
     def forward(self, x, soft = True):
         if x.dtype != torch.float32:

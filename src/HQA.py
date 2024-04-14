@@ -533,7 +533,7 @@ class HQA(pl.LightningModule):
         self.code_count = self.code_count + indices_onehot.sum(dim=(0, 1))
         if batch_idx > 0 and batch_idx % 25 == 0:
             self.reset_least_used_codeword()
-            if self.create_output and self.codebook_resets % 1 == 0:
+            if self.create_output and self.codebook_resets % 25 == 0:
                 tsne = self.visualize_codebook()
                 df = pd.DataFrame(tsne,
                     columns=['tsne-2d-one', 'tsne-2d-two'])
