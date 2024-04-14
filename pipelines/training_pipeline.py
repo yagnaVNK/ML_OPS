@@ -7,8 +7,9 @@ from typing import Tuple
 from typing_extensions import Annotated
 from zenml.materializers.base_materializer import BaseMaterializerMeta
 
+
 @pipeline(enable_artifact_metadata=True,enable_step_logs=True)
-def final_test_training_pipeline(classes: list,
+def training_pipeline(classes: list,
                     iq_samples: int, 
                     enc_hidden_sizes: list,
                     dec_hidden_sizes: list,
@@ -89,7 +90,7 @@ def final_test_training_pipeline(classes: list,
                                   train_bool = trainbool,
                                   eff_net_PATH = eff_net_path)
     
-    accuracies_Hae= eval_HAE(classes,HAE_model,classifier,ds_test)
+    accuracies_Hae = eval_HAE(classes,HAE_model,classifier,ds_test)
     
     accuracies_Hqa = eval_HQA(classes,HQA_model,classifier,ds_test)
 

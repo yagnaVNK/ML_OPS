@@ -1,0 +1,15 @@
+artifact_uri: file:///E:/GitHub/ML_OPS/HAE_ml-runs/152752676867067427/4a346b5b462941718ab9e3ab12a3eafa/artifacts
+end_time: 1713053675775
+entry_point_name: ''
+experiment_id: '152752676867067427'
+lifecycle_stage: active
+run_id: 4a346b5b462941718ab9e3ab12a3eafa
+run_name: agreeable-ox-312
+run_uuid: 4a346b5b462941718ab9e3ab12a3eafa
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1713053656717
+status: 4
+tags: []
+user_id: kaasa

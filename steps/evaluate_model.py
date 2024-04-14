@@ -9,7 +9,7 @@ from torchsig.utils.cm_plotter import plot_confusion_matrix
 from sklearn.metrics import classification_report
 from src.utils import *
 
-@step(enable_cache=True)
+@step(enable_cache=True,enable_artifact_visualization=True)
 def eval_HAE(classes: list,model: HAE,classifier: ExampleNetwork,ds_test: ModulationsDataset) -> list:
     """
     
@@ -82,7 +82,7 @@ def eval_HAE(classes: list,model: HAE,classifier: ExampleNetwork,ds_test: Modula
     
     return accuracies
 
-@step
+@step(enable_cache=True,enable_artifact_visualization=True)
 def eval_HQA(classes: list,model: HQA,classifier: ExampleNetwork,ds_test: ModulationsDataset) -> list:
     """
     

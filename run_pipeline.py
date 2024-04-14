@@ -1,18 +1,18 @@
-from pipelines.training_pipeline import final_test_training_pipeline
+from pipelines.training_pipeline import training_pipeline
+import mlflow
 
 if __name__  == "__main__":
 
-    
     iq_samples = 1024
     samples_per_class = 1000
     batch_size = 32
-    Hae_epochs = 2
-    Hqa_epochs = 2
+    Hae_epochs = 3
+    Hqa_epochs = 3
     classifier_epochs = 15
-    trainbool = True
+    trainbool = False
     eff_net_PATH = f"./src/classifiers/{classifier_epochs}epochs_classifier.pt"
 
-    layers = 4
+    layers = 2
     input_feature_dim = 2
     classes = ["4ask","8pam","16psk","32qam_cross","2fsk","ofdm-256"]
     enc_hidden_sizes = [16, 16, 32, 64, 128]
@@ -27,12 +27,12 @@ if __name__  == "__main__":
     compress = 2
     hae_lr = 4e-4
     hqa_lr = 4e-4
-    hae_Cos_coeff = 0
+    hae_Cos_coeff = 0.001
     hqa_Cos_coeff = 0.7
     KL_coeff = 0.1
     CL_coeff = 0.005
 
-    final_test_training_pipeline(classes=classes,
+    training_pipeline(classes=classes,
                     iq_samples = iq_samples, 
                     enc_hidden_sizes = enc_hidden_sizes,
                     dec_hidden_sizes = dec_hidden_sizes,

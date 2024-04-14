@@ -1,9 +1,9 @@
-import logging
+
 from zenml import step
 from torch.utils.data import DataLoader
 from src.HAE import *
 from src.HQA import *
-import torch
+from lightning.pytorch.loggers import MLFlowLogger
 
 @step(enable_cache=True)
 def train_HAE(dl_train: DataLoader,
@@ -23,6 +23,7 @@ def train_HAE(dl_train: DataLoader,
     """
 
     """
+    
     enc_hidden_sizes = enc_hidden_sizes
     dec_hidden_sizes = dec_hidden_sizes
     layers = layers
@@ -123,7 +124,6 @@ def train_HQA(dl_train: DataLoader,
         else:
             hqa = HQA.init_higher(
                 hqa_prev,
-                input_feat_dim=input_feat_dim,
                 enc_hidden_dim=enc_hidden_sizes[i],
                 dec_hidden_dim=dec_hidden_sizes[i],
                 num_res_blocks=num_res_blocks + 2,
@@ -145,7 +145,7 @@ def train_HQA(dl_train: DataLoader,
         hqa.encoder = model[i].encoder
         hqa.decoder = model[i].decoder
         print("loaded the encoder and decoder pretrained models")
-
+        
         trainer = pl.Trainer(max_epochs=epochs, 
              logger=None,  
              devices=1,
