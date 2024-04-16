@@ -8,8 +8,8 @@ if __name__  == "__main__":
     batch_size = 32
     Hae_epochs = 100
     Hqa_epochs = 100
-    classifier_epochs = 15
-    trainbool = False
+    classifier_epochs = 100
+    trainbool = True
     eff_net_PATH = f"./src/classifiers/{classifier_epochs}epochs_classifier.pt"
 
     layers = 5

@@ -87,7 +87,8 @@ def training_pipeline(classes: list,
                                   dl_val = dl_val,
                                   epochs = classifier_epochs,
                                   train_bool = trainbool,
-                                  eff_net_PATH = eff_net_path)
+                                  eff_net_PATH = eff_net_path,
+                                  classes = classes)
     
     accuracies_Hae = eval_HAE(classes,HAE_model,classifier,ds_test)
     

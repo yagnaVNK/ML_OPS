@@ -11,10 +11,12 @@ def train_classifier(dl_train: DataLoader,
                 dl_val: DataLoader,
                 epochs: int,
                 train_bool: bool,
-                eff_net_PATH: str) -> ExampleNetwork:
+                eff_net_PATH: str,
+                classes: list) -> ExampleNetwork:
     
     model = efficientnet_b4(
-        pretrained=False
+        pretrained=False,
+        num_classes=len(classes)
     )
     example_model = ExampleNetwork(model, dl_train, dl_val)
     example_model = example_model.float().to(device)    
