@@ -6,8 +6,8 @@ if __name__  == "__main__":
     iq_samples = 1024
     samples_per_class = 1000
     batch_size = 32
-    Hae_epochs = 30
-    Hqa_epochs = 30
+    Hae_epochs = 100
+    Hqa_epochs = 100
     classifier_epochs = 15
     trainbool = False
     eff_net_PATH = f"./src/classifiers/{classifier_epochs}epochs_classifier.pt"
@@ -23,7 +23,7 @@ if __name__  == "__main__":
     batch_norm = 1
     reset_choice = 1
     num_res_blocks = 0
-    cos_reset = 1
+    cos_reset = 0
     compress = 2
     hae_lr = 4e-4
     hqa_lr = 4e-4
@@ -60,4 +60,5 @@ if __name__  == "__main__":
                     visual_dir = "./codebooks/",
                     eff_net_path = eff_net_PATH,
                     trainbool = trainbool)
+
     

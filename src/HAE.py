@@ -271,7 +271,7 @@ class HAE(pl.LightningModule):
         self.save_hyperparameters(ignore=['prev_model'])
         self.prev_model = prev_model
         if compress ==2:
-            self.encoder = Encoder(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=batch_norm)
+            self.encoder = Encoder(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=True)
             self.decoder = Decoder(
                 codebook_dim,
                 input_feat_dim,
@@ -280,7 +280,7 @@ class HAE(pl.LightningModule):
                 num_res_blocks=num_res_blocks
             )
         else:
-            self.encoder = Encoder2(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=batch_norm)
+            self.encoder = Encoder2(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=True)
             self.decoder = Decoder2(
                 codebook_dim,
                 input_feat_dim,

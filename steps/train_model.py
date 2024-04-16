@@ -37,7 +37,7 @@ def train_HAE(dl_train: DataLoader,
     
     for i in range(layers): 
         print(f'training Layer {i}')
-        print('==============================================')
+        print('===============================================')
         if i == 0:
             hae = HAE.init_bottom(
                 input_feat_dim=input_feat_dim,
@@ -121,7 +121,7 @@ def train_HQA(dl_train: DataLoader,
     
     for i in range(layers): 
         print(f'training Layer {i}')
-        print('==============================================')
+        print('===============================================')
         if i == 0:
             hqa = HQA.init_bottom(
                 input_feat_dim=input_feat_dim,

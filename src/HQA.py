@@ -428,7 +428,7 @@ class HQA(pl.LightningModule):
     
     @torch.no_grad()
     def init_codebook(self, codebook_init, dataloader  ):
-        if codebook_init == 'uniform1':
+        if codebook_init == 'uniform':
             self.codebook.codebook.weight.data.uniform_(-1./self.codebook.codebook_slots, 1./self.codebook.codebook_dim)
             print("Uniform Codebook initialization")
         elif codebook_init == 'normal':
