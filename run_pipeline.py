@@ -4,11 +4,11 @@ from zenml.client import Client
 if __name__  == "__main__":
     print(Client().active_stack.experiment_tracker.get_tracking_uri())
     iq_samples = 1024
-    samples_per_class = 1000
-    batch_size = 32
-    Hae_epochs = 100
-    Hqa_epochs = 100
-    classifier_epochs = 100
+    samples_per_class = 8000
+    batch_size = 64
+    Hae_epochs = 10
+    Hqa_epochs = 20
+    classifier_epochs = 10
     trainbool = True
     eff_net_PATH = f"./src/classifiers/{classifier_epochs}epochs_classifier.pt"
 
@@ -17,18 +17,18 @@ if __name__  == "__main__":
     classes = ["4ask","8pam","16psk","32qam_cross","2fsk","ofdm-256"]
     enc_hidden_sizes = [16, 16, 32, 64, 128, 256]
     dec_hidden_sizes = [16, 64, 256, 512, 1024, 2048]
-    codebook_slots = 64
+    codebook_slots = 128
     codeword_dim = 64
     codebook_init = "normal"
     batch_norm = 1
     reset_choice = 1
-    num_res_blocks = 0
-    cos_reset = 0
+    num_res_blocks = 2
+    cos_reset = 1
     compress = 2
     hae_lr = 4e-4
     hqa_lr = 4e-4
-    hae_Cos_coeff = 0.001
-    hqa_Cos_coeff = 0.7
+    hae_Cos_coeff = 0.5
+    hqa_Cos_coeff = 0
     KL_coeff = 0.1
     CL_coeff = 0.005
 
@@ -59,6 +59,7 @@ if __name__  == "__main__":
                     CL_coeff = CL_coeff,
                     visual_dir = "./codebooks/",
                     eff_net_path = eff_net_PATH,
-                    trainbool = trainbool)
+                    trainbool = trainbool,
+                    )
 
     

@@ -265,7 +265,7 @@ class HAE(pl.LightningModule):
         Cos_coeff = 0.7,
         batch_norm = 1,
         cos_reset = 1,
-        compress = 2
+        compress = 2,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=['prev_model'])
@@ -301,7 +301,6 @@ class HAE(pl.LightningModule):
         # Tells pytorch lightinig to use our custom training loop
         self.automatic_optimization = False
         mlflow.set_experiment("training_pipeline")
-        
         mlflow.start_run(run_name = f"HAE Layer {self.layer}",nested=True)
         # Log hyperparameters
         mlflow.log_params({

@@ -9,10 +9,22 @@ from torchsig.utils.cm_plotter import plot_confusion_matrix
 from sklearn.metrics import classification_report
 from src.utils import *
 from zenml.client import Client
+import lightning.pytorch as pl
+from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import MLFlowExperimentTrackerSettings
+
+mlflow_settings = MLFlowExperimentTrackerSettings(
+    nested=True,
+    tags={"key": "value"}
+)
 
 experiment_tracker = Client().active_stack.experiment_tracker
+print(experiment_tracker)
 
-@step(enable_cache=True,enable_artifact_visualization=True,experiment_tracker =  experiment_tracker.name)
+
+@step(enable_cache=True,enable_artifact_visualization=True, experiment_tracker =experiment_tracker.name,
+      settings={
+        "experiment_tracker.mlflow": mlflow_settings
+    })
 def eval_HAE(classes: list,model: HAE,classifier: ExampleNetwork,ds_test: ModulationsDataset) -> list:
     """
     
@@ -90,7 +102,10 @@ def eval_HAE(classes: list,model: HAE,classifier: ExampleNetwork,ds_test: Modula
         plt.close(fig)
     return accuracies
 
-@step(enable_cache=True,enable_artifact_visualization=True,experiment_tracker =  experiment_tracker.name)
+@step(enable_cache=True,enable_artifact_visualization=True,experiment_tracker =  experiment_tracker.name,
+      settings={
+        "experiment_tracker.mlflow": mlflow_settings
+    })
 def eval_HQA(classes: list,model: HQA,classifier: ExampleNetwork,ds_test: ModulationsDataset) -> list:
     """
     
@@ -166,4 +181,64 @@ def eval_HQA(classes: list,model: HQA,classifier: ExampleNetwork,ds_test: Modula
         mlflow.log_artifact(plot_path)
         
         plt.close(fig)
+    return accuracies
+
+
+
+@step(enable_cache=True,enable_artifact_visualization=True,experiment_tracker =  experiment_tracker.name,
+      settings={
+        "experiment_tracker.mlflow": mlflow_settings
+    })
+def eval_classifier(classes: list,classifier: ExampleNetwork,ds_test: ModulationsDataset) -> list:
+    """
+    
+    """
+    accuracies = []
+    num_recons = 1
+    num_classes = len(classes)
+    
+    mlflow.set_experiment("training_pipeline")
+    run_name = f"classifier evaluation - {num_classes} Classes"
+    num_test_examples = len(ds_test)
+    with mlflow.start_run(run_name=run_name,nested=True):
+        y_raw_preds = np.empty((num_test_examples, num_classes))
+        y_preds = np.zeros((num_test_examples,))
+        y_true = np.zeros((num_test_examples,))
+        classifier.to(device).eval()
+        for i in tqdm(range(0, num_test_examples)):
+            # Retrieve data
+            idx = i  # Use index if evaluating over full dataset
+            
+            data, label = ds_test[idx]
+            test_x = torch.from_numpy(np.expand_dims(data, 0)).float().to(device)
+            pred_tmp = classifier.predict(test_x)
+            pred_tmp = pred_tmp.cpu().numpy() if torch.cuda.is_available() else pred_tmp
+            # Argmax
+            y_preds[i] = np.argmax(pred_tmp)
+            # Store label
+            y_true[i] = label
+    
+    
+        acc = np.sum(np.asarray(y_preds) == np.asarray(y_true)) / len(y_true)
+        mlflow.log_metric(f"accuracy", acc*100, step=1)
+        plot_confusion_matrix(
+            y_true,
+            y_preds,
+            classes=classes,
+            normalize=True,
+            title="Example Modulations Confusion Matrix\nTotal Accuracy: {:.2f}%".format(
+                acc * 100
+            ),
+            text=False,
+            rotate_x_text=60,
+            figsize=(10, 10),
+        )
+        confusionMatrix_save_path = f"./vis/confusion_matrix_layer.png"
+        plt.savefig(confusionMatrix_save_path)
+        mlflow.log_artifact(confusionMatrix_save_path)
+        print(f"\nClassification Report: \nAccuracy {acc*100}")
+        print(classification_report(y_true, y_preds))
+        matplotlib.pyplot.close()
+        accuracies.append(acc*100)
+
     return accuracies

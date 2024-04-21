@@ -46,7 +46,7 @@ def getDataLoader(classes: list,
         use_class_idx = True,
         level=0,
         num_iq_samples=iq_samples,
-        num_samples=int(len(classes)*samples_per_class)/10,
+        num_samples=int(len(classes)*samples_per_class)/80,
         include_snr=False,
         transform = data_transform
     )
@@ -58,7 +58,7 @@ def getDataLoader(classes: list,
         use_class_idx = True,
         level=0,
         num_iq_samples=iq_samples,
-        num_samples=int(len(classes)*samples_per_class)/10,
+        num_samples=int(len(classes)*samples_per_class)/80,
         include_snr=False,
         transform = data_transform
     )

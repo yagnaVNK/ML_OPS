@@ -5,8 +5,23 @@ from src.efficientNet_classifer import *
 import torch
 from torchsig.models.iq_models.efficientnet.efficientnet import efficientnet_b4
 from src.utils import *
+from zenml.client import Client
+import lightning.pytorch as pl
+from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import MLFlowExperimentTrackerSettings
 
-@step
+mlflow_settings = MLFlowExperimentTrackerSettings(
+    nested=True,
+    tags={"Cos Loss": "0.7"}
+)
+
+experiment_tracker = Client().active_stack.experiment_tracker
+
+
+
+@step(enable_cache=True,experiment_tracker = experiment_tracker.name,
+      settings={
+        "experiment_tracker.mlflow": mlflow_settings
+    })
 def train_classifier(dl_train: DataLoader,
                 dl_val: DataLoader,
                 epochs: int,
@@ -22,7 +37,8 @@ def train_classifier(dl_train: DataLoader,
     example_model = example_model.float().to(device)    
     trainer = Trainer(
         max_epochs=epochs, 
-        devices=1, accelerator="gpu"
+        devices=1, 
+        accelerator="gpu"
     )
     if train_bool:
         trainer.fit(example_model,dl_train,dl_val)

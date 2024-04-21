@@ -35,10 +35,8 @@ def training_pipeline(classes: list,
                     CL_coeff: float,
                     visual_dir: str,
                     eff_net_path: str,
-                    trainbool: bool) -> Tuple[Annotated[list,"HAE_Accuracies"], Annotated[list,"HQA_Accuracies"] ,Annotated[HAE,"hae_model"], Annotated[HQA,"hqa_model"] ]:
-    """
-    
-    """
+                    trainbool: bool) -> Tuple[Annotated[list,"classifier_Accuracies"], Annotated[list,"HAE_Accuracies"], Annotated[list,"HQA_Accuracies"] ,Annotated[HAE,"hae_model"], Annotated[HQA,"hqa_model"] ]:
+
     
     dl_train,ds_train,dl_test,ds_test,dl_val,ds_val = getDataLoader(classes = classes,
                                                                     iq_samples = iq_samples,
@@ -59,7 +57,7 @@ def training_pipeline(classes: list,
                             compress= compress,
                             Cos_coeff = hae_Cos_coeff,
                             hae_lr=hae_lr)
-
+    
     HQA_model = train_HQA(  dl_train = dl_train,
                             dl_val = dl_val,
                             epochs = Hqa_epochs,
@@ -81,8 +79,7 @@ def training_pipeline(classes: list,
                             compress = compress,
                             model = HAE_model,
                             hqa_lr = hqa_lr)
-
-
+    
     classifier = train_classifier(dl_train = dl_train,
                                   dl_val = dl_val,
                                   epochs = classifier_epochs,
@@ -94,4 +91,8 @@ def training_pipeline(classes: list,
     
     accuracies_Hqa = eval_HQA(classes,HQA_model,classifier,ds_test)
 
-    return accuracies_Hae, accuracies_Hqa , HAE_model, HQA_model
+    accuracies_classifier = eval_classifier(classes,classifier,ds_test)
+
+
+
+    return accuracies_classifier, accuracies_Hae, None , HAE_model, None

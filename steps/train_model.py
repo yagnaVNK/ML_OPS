@@ -7,12 +7,20 @@ from lightning.pytorch.loggers import MLFlowLogger
 import mlflow
 from zenml.client import Client
 import lightning.pytorch as pl
+from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import MLFlowExperimentTrackerSettings
 
+mlflow_settings = MLFlowExperimentTrackerSettings(
+    nested=True,
+    tags={"key": "value"}
+)
 
 experiment_tracker = Client().active_stack.experiment_tracker
 
 
-@step(enable_cache=True,experiment_tracker = experiment_tracker.name)
+@step(enable_cache=False,experiment_tracker = experiment_tracker.name,
+      settings={
+        "experiment_tracker.mlflow": mlflow_settings
+    })
 def train_HAE(dl_train: DataLoader,
               dl_val: DataLoader,
               epochs: int,
@@ -50,7 +58,7 @@ def train_HAE(dl_train: DataLoader,
                 compress = compress,
                 codebook_dim = codeword_dim,
                 Cos_coeff = Cos_coeff,
-                lr=hae_lr,
+                lr=hae_lr
             )
             
         else:
@@ -58,14 +66,14 @@ def train_HAE(dl_train: DataLoader,
                 hae_prev,
                 enc_hidden_dim=enc_hidden_sizes[i],
                 dec_hidden_dim=dec_hidden_sizes[i],
-                num_res_blocks=num_res_blocks + 2,
+                num_res_blocks=num_res_blocks ,
                 batch_norm = batch_norm,
-                layer = i,
+                layer = 2,
                 cos_reset = cos_reset,
                 compress = compress,
                 codebook_dim = codeword_dim,
                 Cos_coeff = Cos_coeff,
-                lr=hae_lr,
+                lr=hae_lr
             )
         
         '''
@@ -93,7 +101,10 @@ def train_HAE(dl_train: DataLoader,
     return hae
 
 
-@step(enable_cache=True ,experiment_tracker =  experiment_tracker.name)
+@step(enable_cache=False,experiment_tracker = experiment_tracker.name,
+      settings={
+        "experiment_tracker.mlflow": mlflow_settings
+    })
 def train_HQA(dl_train: DataLoader,
               dl_val: DataLoader,
               epochs: int,
@@ -121,7 +132,7 @@ def train_HQA(dl_train: DataLoader,
     
     for i in range(layers): 
         print(f'training Layer {i}')
-        print('==============================================')
+        print("==============================================")
         if i == 0:
             hqa = HQA.init_bottom(
                 input_feat_dim=input_feat_dim,
@@ -141,7 +152,7 @@ def train_HQA(dl_train: DataLoader,
                 lr = hqa_lr,
                 cos_reset = cos_reset,
                 compress = compress,
-                train_dataloader = dl_train,
+                train_dataloader = dl_train
             )
             
         else:
@@ -149,7 +160,7 @@ def train_HQA(dl_train: DataLoader,
                 hqa_prev,
                 enc_hidden_dim=enc_hidden_sizes[i],
                 dec_hidden_dim=dec_hidden_sizes[i],
-                num_res_blocks=num_res_blocks + 2,
+                num_res_blocks=num_res_blocks ,
                 KL_coeff = KL_coeff,
                 CL_coeff = CL_coeff,
                 Cos_coeff = Cos_coeff,
@@ -159,14 +170,14 @@ def train_HQA(dl_train: DataLoader,
                 output_dir = output_dir,
                 codebook_slots = codebook_slots,
                 codebook_dim = codeword_dim,
-                layer = i,
+                layer = 2,
                 lr = hqa_lr,
                 cos_reset = cos_reset,
                 compress = compress,
-                train_dataloader = dl_train,
+                train_dataloader = dl_train
             )
-        hqa.encoder = model[i].encoder
-        hqa.decoder = model[i].decoder
+        hqa.encoder = model[i].encoder.eval()
+        hqa.decoder = model[i].decoder.eval()
         print("loaded the encoder and decoder pretrained models")
         '''
         mlflow_logger = MLFlowLogger(experiment_name= "training_pipeline" ,run_name=f"HQA Layer {i+1}" , tracking_uri=Client().active_stack.experiment_tracker.get_tracking_uri())
