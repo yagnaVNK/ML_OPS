@@ -383,6 +383,8 @@ class HQA(pl.LightningModule):
         self.cos_reset = cos_reset
         self.dataloader = train_dataloader
         torch.set_default_dtype(torch.float32)
+        self.train_outputs = {}
+        self.val_outputs = {}
         
         # Tells pytorch lightinig to use our custom training loop
         self.automatic_optimization = False
@@ -482,8 +484,9 @@ class HQA(pl.LightningModule):
     def on_train_start(self):
         self.code_count = torch.zeros(self.codebook.codebook_slots, device=self.device, dtype=torch.float64)
         self.codebook_resets = 0
-        if(self.cos_reset):
-            self.Cos_coeff = self.Cos_coeff*int(self.layer == 0)
+        def on_train_start(self):
+            cosList = [0.1,0.05,0.01,0.005,0.0001]
+            self.Cos_coeff = cosList[self.layer]
         
     
     def cos_loss(self,x):
@@ -530,69 +533,70 @@ class HQA(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, _ = batch
+        
         # anneal temperature
         if self.decay:
-            self.codebook.temperature = self.decay_temp_linear(step=self.global_step+1, 
-                                                            total_steps=self.trainer.max_epochs * self.trainer.num_training_batches, 
-                                                            temp_base=self.codebook.temperature)
+            self.codebook.temperature = self.decay_temp_linear(step=self.global_step+1, total_steps=self.trainer.max_epochs * self.trainer.num_training_batches, temp_base=self.codebook.temperature)
         
         optimizer = self.optimizers()
         scheduler = self.lr_schedulers()
-
         cos_loss, recon_loss, loss, indices, kl_loss, commit_loss = self.get_training_loss(x.float())
-
+        
         optimizer.zero_grad()
-
         self.manual_backward(loss)
-
         if self.clip_grads:
             nn.utils.clip_grad_norm_(self.parameters(), 1.0)
-
         optimizer.step()
         scheduler.step()
-
+        
         indices_onehot = F.one_hot(indices, num_classes=self.codebook.codebook_slots).float()
         self.code_count = self.code_count + indices_onehot.sum(dim=(0, 1))
+        
         if batch_idx > 0 and batch_idx % 25 == 0:
             self.reset_least_used_codeword()
-            if self.create_output and self.codebook_resets % 25 == 0:
-                tsne = self.visualize_codebook()
-                df = pd.DataFrame(tsne,
-                    columns=['tsne-2d-one', 'tsne-2d-two'])
-                y = [i for i in range(len(df))]
+        
+        if self.create_output and self.codebook_resets % 25 == 0:
+            tsne = self.visualize_codebook()
+            df = pd.DataFrame(tsne, columns=['tsne-2d-one', 'tsne-2d-two'])
+            y = [i for i in range(len(df))]
+            plt.figure(figsize=(16, 10))
+            scplot = sns.scatterplot(x="tsne-2d-one", y="tsne-2d-two", color='black', data=df, legend=False)
+            
+            if not os.path.exists(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}'):
+                os.makedirs(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}')
+            
+            fig = scplot.get_figure()
+            plot_path = f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}/reset{self.codebook_resets}.png'
+            fig.savefig(plot_path)
+            mlflow.log_artifact(plot_path)
+            plt.close()
+        
+        self.log("loss", loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("cos_loss", cos_loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("recon", recon_loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("kl", kl_loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("commit", commit_loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.train_outputs.update({"loss": loss, "cos_loss": cos_loss, "recon": recon_loss, "kl": kl_loss, "commit": commit_loss})
+        return {"loss": loss, "cos_loss": cos_loss, "recon": recon_loss, "kl": kl_loss, "commit": commit_loss}
 
-                plt.figure(figsize=(16, 10))
-                scplot = sns.scatterplot(
-                    x="tsne-2d-one", y="tsne-2d-two",
-                    color='black',
-                    data=df,
-                    legend=False,
-                )
-
-                if not os.path.exists(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}'):
-                    os.makedirs(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}')
-                fig = scplot.get_figure()
-                plot_path = f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}/reset{self.codebook_resets}.png'
-                fig.savefig(plot_path)
-                #print("coming here")
-                # Log the scatterplot as an artifact in MLflow
-                mlflow.log_artifact(plot_path)
-                
-                plt.close()
-
-        self.log("loss", loss, prog_bar=True)
-        self.log("cos_loss", cos_loss, prog_bar=True)
-        self.log("recon", recon_loss, prog_bar=True)
-        self.log("kl", kl_loss, prog_bar=True)
-        self.log("commit", commit_loss, prog_bar=True)
-
-        mlflow.log_metric("loss", loss, step=self.global_step)
-        mlflow.log_metric("cos_loss", cos_loss, step=self.global_step)
-        mlflow.log_metric("recon", recon_loss, step=self.global_step)
-        mlflow.log_metric("kl", kl_loss, step=self.global_step)
-        mlflow.log_metric("commit", commit_loss, step=self.global_step)
-
-        return loss
+    def on_train_epoch_end(self):
+        avg_loss = torch.mean(self.train_outputs['loss'])
+        avg_cos_loss = torch.mean(self.train_outputs['cos_loss'])
+        avg_recon = torch.mean(self.train_outputs['recon'])
+        avg_kl = torch.mean(self.train_outputs['kl'])
+        avg_commit = torch.mean(self.train_outputs['commit'])
+        
+        self.log("avg_loss", avg_loss, prog_bar=True)
+        self.log("avg_cos_loss", avg_cos_loss, prog_bar=True)
+        self.log("avg_recon", avg_recon, prog_bar=True)
+        self.log("avg_kl", avg_kl, prog_bar=True)
+        self.log("avg_commit", avg_commit, prog_bar=True)
+        
+        mlflow.log_metric("avg_loss", avg_loss.item(), step=self.current_epoch)
+        mlflow.log_metric("avg_cos_loss", avg_cos_loss.item(), step=self.current_epoch)
+        mlflow.log_metric("avg_recon", avg_recon.item(), step=self.current_epoch)
+        mlflow.log_metric("avg_kl", avg_kl.item(), step=self.current_epoch)
+        mlflow.log_metric("avg_commit", avg_commit.item(), step=self.current_epoch)
 
 
     def visualize_codebook(self):
@@ -622,20 +626,34 @@ class HQA(pl.LightningModule):
     
 
     def validation_step(self, val_batch, batch_idx):
-        x,_ = val_batch
+        x, _ = val_batch
         cos_loss, recon_loss, loss, indices, kl_loss, commit_loss = self.get_validation_loss(x)
-        self.log("val_loss", loss, prog_bar=False, sync_dist=True)
-        self.log("val_cos_loss", cos_loss, prog_bar=False,sync_dist=True)
-        self.log("val_recon", recon_loss, prog_bar=False, sync_dist=True)
-        self.log("val_kl", kl_loss, prog_bar=False,  sync_dist=True)
-        self.log("val_commit", commit_loss, prog_bar=False,sync_dist=True)
+        
+        self.log("val_loss", loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
+        self.log("val_cos_loss", cos_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
+        self.log("val_recon", recon_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
+        self.log("val_kl", kl_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
+        self.log("val_commit", commit_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
+        self.val_outputs.update({"val_loss": loss, "val_cos_loss": cos_loss, "val_recon": recon_loss, "val_kl": kl_loss, "val_commit": commit_loss})
+        return {"val_loss": loss, "val_cos_loss": cos_loss, "val_recon": recon_loss, "val_kl": kl_loss,}
 
-        mlflow.log_metric("val_loss", loss, step=batch_idx*(self.current_epoch+1))
-        mlflow.log_metric("val_cos_loss", cos_loss, step=batch_idx*(self.current_epoch+1))
-        mlflow.log_metric("val_recon", recon_loss, step=batch_idx*(self.current_epoch+1))
-        mlflow.log_metric("val_kl", kl_loss, step=batch_idx*(self.current_epoch+1))
-        mlflow.log_metric("val_commit", commit_loss, step=batch_idx*(self.current_epoch+1))
-        return loss
+    def on_validation_epoch_end(self):
+        avg_loss = torch.mean(self.val_outputs['val_loss'])
+        avg_cos_loss = torch.mean(self.val_outputs['val_cos_loss'])
+        avg_recon = torch.mean(self.val_outputs['val_recon'])
+        avg_kl = torch.mean(self.val_outputs['val_kl'])
+        avg_commit = torch.mean(self.val_outputs['val_commit'])
+        
+        self.log("avg_val_loss", avg_loss, prog_bar=True, sync_dist=True)
+        self.log("avg_val_cos_loss", avg_cos_loss, prog_bar=True, sync_dist=True)
+        self.log("avg_val_recon", avg_recon, prog_bar=True, sync_dist=True)
+        self.log("avg_val_kl", avg_kl, prog_bar=True, sync_dist=True)
+        
+        
+        mlflow.log_metric("avg_val_loss", avg_loss.item(), step=self.current_epoch)
+        mlflow.log_metric("avg_val_cos_loss", avg_cos_loss.item(), step=self.current_epoch)
+        mlflow.log_metric("avg_val_recon", avg_recon.item(), step=self.current_epoch)
+        mlflow.log_metric("avg_val_kl", avg_kl.item(), step=self.current_epoch)
     
     def test_step(self, test_batch, batch_idx):
         x,_ = test_batch
@@ -644,7 +662,6 @@ class HQA(pl.LightningModule):
         self.log("tst_cos_loss", cos_loss, prog_bar=False)
         self.log("tst_recon", recon_loss, prog_bar=False)
         self.log("tst_kl", kl_loss, prog_bar=False)
-        self.log("tst_commit", commit_loss, prog_bar=False)
         return loss    
 
     

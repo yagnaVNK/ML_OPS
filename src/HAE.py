@@ -297,6 +297,8 @@ class HAE(pl.LightningModule):
         self.layer = layer
         self.Cos_coeff = torch.tensor(Cos_coeff)
         self.cos_reset = cos_reset
+        self.train_outputs = {}
+        self.val_outputs = {}
     
         # Tells pytorch lightinig to use our custom training loop
         self.automatic_optimization = False
@@ -376,44 +378,63 @@ class HAE(pl.LightningModule):
         return temp_min + (temp_base - temp_min) * factor
 
 
-    def training_step(self,batch, batch_idx):
-        x,_ = batch
-
+    def training_step(self, batch, batch_idx):
+        x, _ = batch
         optimizer = self.optimizers()
         scheduler = self.lr_schedulers()
-
-        cos_loss, recon_loss, loss = self.get_training_loss(x)    
-
+        cos_loss, recon_loss, loss = self.get_training_loss(x)
+        
         optimizer.zero_grad()
-
         self.manual_backward(loss)
-
         if self.clip_grads:
             nn.utils.clip_grad_norm_(self.parameters(), 1.0)
-
         optimizer.step()
         scheduler.step()
+        
+        self.log("loss", loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("cos_loss", cos_loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("recon", recon_loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.train_outputs.update({"loss": loss, "cos_loss": cos_loss, "recon": recon_loss})
 
-        self.log("loss", loss, prog_bar=True)
-        self.log("cos_loss", cos_loss, prog_bar=True)
-        self.log("recon", recon_loss, prog_bar=True)
-        mlflow.log_metric("loss", loss, step=self.global_step)
-        mlflow.log_metric("cos_loss", cos_loss, step=self.global_step)
-        mlflow.log_metric("recon", recon_loss, step=self.global_step)
+        return {"loss": loss, "cos_loss": cos_loss, "recon": recon_loss}
 
-        return loss
+    def on_train_epoch_end(self):
+        avg_loss = torch.mean(self.train_outputs['loss'])
+        avg_cos_loss = torch.mean(self.train_outputs['cos_loss'])
+        avg_recon = torch.mean(self.train_outputs['recon'])
+        
+        self.log("avg_loss", avg_loss, prog_bar=True)
+        self.log("avg_cos_loss", avg_cos_loss, prog_bar=True)
+        self.log("avg_recon", avg_recon, prog_bar=True)
+        
+        mlflow.log_metric("avg_loss", avg_loss.item(), step=self.current_epoch)
+        mlflow.log_metric("avg_cos_loss", avg_cos_loss.item(), step=self.current_epoch)
+        mlflow.log_metric("avg_recon", avg_recon.item(), step=self.current_epoch)
 
     def validation_step(self, val_batch, batch_idx):
         x, _ = val_batch
         cos_loss, recon_loss, loss = self.get_validation_loss(x)
+        
+        self.log("val_loss", loss, prog_bar=True, sync_dist=True, on_step=True, on_epoch=True)
+        self.log("val_cos_loss", cos_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
+        self.log("val_recon", recon_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
+        self.val_outputs.update({"val_loss": loss, "val_cos_loss": cos_loss, "val_recon": recon_loss})
+        return {"val_loss": loss, "val_cos_loss": cos_loss, "val_recon": recon_loss}
+    
+    def on_validation_epoch_end(self):
+        avg_loss = torch.mean(self.val_outputs['val_loss'])
+        avg_cos_loss = torch.mean(self.val_outputs['val_cos_loss'])
+        avg_recon = torch.mean(self.val_outputs['val_recon'])
+        
+        self.log("avg_val_loss", avg_loss, prog_bar=True, sync_dist=True)
+        self.log("avg_val_cos_loss", avg_cos_loss, prog_bar=True, sync_dist=True)
+        self.log("avg_val_recon", avg_recon, prog_bar=True, sync_dist=True)
+        
+        mlflow.log_metric("avg_val_loss", avg_loss.item(), step=self.current_epoch)
+        mlflow.log_metric("avg_val_cos_loss", avg_cos_loss.item(), step=self.current_epoch)
+        mlflow.log_metric("avg_val_recon", avg_recon.item(), step=self.current_epoch)
 
-        self.log("val_loss", loss, prog_bar=True, sync_dist=True)
-        self.log("val_cos_loss", cos_loss, prog_bar=False,sync_dist=True)
-        self.log("val_recon", recon_loss, prog_bar=False, sync_dist=True)
-        mlflow.log_metric("val_loss", loss, step=batch_idx*(self.current_epoch+1))
-        mlflow.log_metric("val_cos_loss", cos_loss, step=batch_idx*(self.current_epoch+1))
-        mlflow.log_metric("val_recon", recon_loss, step=batch_idx*(self.current_epoch+1))
-        return loss
+    
 
     def test_step(self, test_batch, batch_idx):
 

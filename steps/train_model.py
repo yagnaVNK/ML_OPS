@@ -89,7 +89,7 @@ def train_HAE(dl_train: DataLoader,
             "lr": hae_lr,
         })
         '''
-        trainer = pl.Trainer(max_epochs=epochs,logger=None, devices=[1], accelerator = 'gpu',num_sanity_val_steps=0,strategy='ddp_find_unused_parameters_true')
+        trainer = pl.Trainer(max_epochs=epochs,logger=None, devices=[0], accelerator = 'gpu',num_sanity_val_steps=0)
         
         trainer.fit(hae.float(), dl_train, dl_val)
         hae_prev = hae.eval()
@@ -192,7 +192,7 @@ def train_HQA(dl_train: DataLoader,
             "compress": compress,
         })
         '''
-        trainer = pl.Trainer(max_epochs=epochs,logger=None, devices=[1], accelerator = 'gpu',num_sanity_val_steps=0,strategy='ddp_find_unused_parameters_true')
+        trainer = pl.Trainer(max_epochs=epochs,logger=None, devices=[0], accelerator = 'gpu',num_sanity_val_steps=0)
         trainer.fit(hqa.float(), dl_train, dl_val)
         hqa_prev = hqa.eval()
 
