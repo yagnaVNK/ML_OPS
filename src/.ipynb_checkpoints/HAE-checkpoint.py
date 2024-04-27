@@ -327,6 +327,10 @@ class HAE(pl.LightningModule):
         z_e = self.encoder(z_e_lower)
         z_e_lower_tilde = self.decoder(z_e)
         return z_e_lower_tilde, z_e_lower, z_e
+
+    def on_train_start(self):
+        cosList = [0.1,0.05,0.01,0.005,0.0001]
+        self.Cos_coeff = cosList[self.layer]
         
     def on_fit_end(self):
         mlflow.end_run()

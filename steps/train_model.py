@@ -17,7 +17,7 @@ mlflow_settings = MLFlowExperimentTrackerSettings(
 experiment_tracker = Client().active_stack.experiment_tracker
 
 
-@step(enable_cache=False,experiment_tracker = experiment_tracker.name,
+@step(enable_cache=True,experiment_tracker = experiment_tracker.name,
       settings={
         "experiment_tracker.mlflow": mlflow_settings
     })
