@@ -89,7 +89,7 @@ def train_HAE(dl_train: DataLoader,
             "lr": hae_lr,
         })
         '''
-        trainer = pl.Trainer(max_epochs=epochs,logger=None, devices=[1], accelerator = 'gpu',num_sanity_val_steps=0,strategy='ddp_find_unused_parameters_true')
+        trainer = pl.Trainer(max_epochs=epochs,logger=None, devices=[0], accelerator = 'gpu',num_sanity_val_steps=0)
         
         trainer.fit(hae.float(), dl_train, dl_val)
         hae_prev = hae.eval()
@@ -171,8 +171,8 @@ def train_HQA(dl_train: DataLoader,
                 compress = compress,
                 train_dataloader = dl_train
             )
-        hqa.encoder = model[i].encoder
-        hqa.decoder = model[i].decoder
+        hqa.encoder = model[i].encoder.eval()
+        hqa.decoder = model[i].decoder.eval()
         print("loaded the encoder and decoder pretrained models")
         '''
         mlflow_logger = MLFlowLogger(experiment_name= "training_pipeline" ,run_name=f"HQA Layer {i+1}" , tracking_uri=Client().active_stack.experiment_tracker.get_tracking_uri())
@@ -192,7 +192,7 @@ def train_HQA(dl_train: DataLoader,
             "compress": compress,
         })
         '''
-        trainer = pl.Trainer(max_epochs=epochs,logger=None, devices=[1], accelerator = 'gpu',num_sanity_val_steps=0,strategy='ddp_find_unused_parameters_true')
+        trainer = pl.Trainer(max_epochs=epochs,logger=None, devices=[0], accelerator = 'gpu',num_sanity_val_steps=0)
         trainer.fit(hqa.float(), dl_train, dl_val)
         hqa_prev = hqa.eval()
 

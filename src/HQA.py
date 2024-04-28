@@ -484,9 +484,10 @@ class HQA(pl.LightningModule):
     def on_train_start(self):
         self.code_count = torch.zeros(self.codebook.codebook_slots, device=self.device, dtype=torch.float64)
         self.codebook_resets = 0
-        def on_train_start(self):
-            cosList = [0.1,0.05,0.01,0.005,0.0001]
-            self.Cos_coeff = cosList[self.layer]
+        #cosList = [0.1,0.05,0.01,0.005,0.0001]
+        cosList = [0.7,0,0,0,0]
+        self.Cos_coeff = cosList[self.layer]
+
         
     
     def cos_loss(self,x):
@@ -554,21 +555,34 @@ class HQA(pl.LightningModule):
         
         if batch_idx > 0 and batch_idx % 25 == 0:
             self.reset_least_used_codeword()
-        
-        if self.create_output and self.codebook_resets % 25 == 0:
-            tsne = self.visualize_codebook()
-            df = pd.DataFrame(tsne, columns=['tsne-2d-one', 'tsne-2d-two'])
-            y = [i for i in range(len(df))]
-            plt.figure(figsize=(16, 10))
-            scplot = sns.scatterplot(x="tsne-2d-one", y="tsne-2d-two", color='black', data=df, legend=False)
-            
-            if not os.path.exists(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}'):
-                os.makedirs(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}')
-            
-            fig = scplot.get_figure()
-            plot_path = f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}/reset{self.codebook_resets}.png'
-            fig.savefig(plot_path)
-            mlflow.log_artifact(plot_path)
+            if self.create_output and self.codebook_resets % 25 == 0:
+                tsne = self.visualize_codebook()
+                df = pd.DataFrame(tsne,
+                                columns=['tsne-2d-one', 'tsne-2d-two'])
+                y = [i for i in range(len(df))]
+
+                plt.figure(figsize=(16,10))
+                scplot = sns.scatterplot(
+                    x="tsne-2d-one", y="tsne-2d-two",
+                    color='black',
+                    data=df,
+                    legend=False
+                )
+
+                # Annotate each point in scatter plot
+                for line in range(0, df.shape[0]):
+                    scplot.text(df['tsne-2d-one'][line]+0.01, df['tsne-2d-two'][line], 
+                                str(line), horizontalalignment='left', 
+                                size='medium', color='black', weight='semibold')
+
+                if not os.path.exists(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}'):
+                    os.makedirs(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}')
+                fig = scplot.get_figure()
+                fig.savefig(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}/reset{self.codebook_resets}.png')
+                plt.close()
+                plot_path = f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}/reset{self.codebook_resets}.png'
+                mlflow.log_artifact(plot_path)
+            self.plot_codebook_histograms(self.codebook_resets)
             plt.close()
         
         self.log("loss", loss, prog_bar=True, on_step=True, on_epoch=True)
@@ -623,7 +637,22 @@ class HQA(pl.LightningModule):
             self.codebook.codebook.weight.data[min_used_code] = moved_code
         self.code_count = torch.zeros_like(self.code_count, device=self.device)
         self.codebook_resets += 1    
-    
+        
+    def plot_codebook_histograms(self,step):
+        layer = self.layer
+        codebook_usage = self.code_count.detach().cpu().numpy()
+        
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.bar(range(len(codebook_usage)), codebook_usage)
+        ax.set_xlabel('Codebook Index')
+        ax.set_ylabel('Usage Count')
+        ax.set_title(f'Codebook Usage Histogram - Layer {layer}')
+        
+        fig.savefig(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{layer}/hist_{step}.png')
+        
+        # Log the figure as an artifact
+        mlflow.log_artifact(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{layer}/hist_{step}.png')
+        plt.close()
 
     def validation_step(self, val_batch, batch_idx):
         x, _ = val_batch
@@ -634,7 +663,7 @@ class HQA(pl.LightningModule):
         self.log("val_recon", recon_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
         self.log("val_kl", kl_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
         self.log("val_commit", commit_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
-        self.val_outputs.update({"val_loss": loss, "val_cos_loss": cos_loss, "val_recon": recon_loss, "val_kl": kl_loss, "val_commit": commit_loss})
+        self.val_outputs.update({"val_loss": loss, "val_cos_loss": cos_loss, "val_recon": recon_loss, "val_kl": kl_loss})
         return {"val_loss": loss, "val_cos_loss": cos_loss, "val_recon": recon_loss, "val_kl": kl_loss,}
 
     def on_validation_epoch_end(self):
@@ -642,7 +671,6 @@ class HQA(pl.LightningModule):
         avg_cos_loss = torch.mean(self.val_outputs['val_cos_loss'])
         avg_recon = torch.mean(self.val_outputs['val_recon'])
         avg_kl = torch.mean(self.val_outputs['val_kl'])
-        avg_commit = torch.mean(self.val_outputs['val_commit'])
         
         self.log("avg_val_loss", avg_loss, prog_bar=True, sync_dist=True)
         self.log("avg_val_cos_loss", avg_cos_loss, prog_bar=True, sync_dist=True)

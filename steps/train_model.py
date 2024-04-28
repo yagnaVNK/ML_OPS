@@ -171,8 +171,8 @@ def train_HQA(dl_train: DataLoader,
                 compress = compress,
                 train_dataloader = dl_train
             )
-        hqa.encoder = model[i].encoder
-        hqa.decoder = model[i].decoder
+        hqa.encoder = model[i].encoder.eval()
+        hqa.decoder = model[i].decoder.eval()
         print("loaded the encoder and decoder pretrained models")
         '''
         mlflow_logger = MLFlowLogger(experiment_name= "training_pipeline" ,run_name=f"HQA Layer {i+1}" , tracking_uri=Client().active_stack.experiment_tracker.get_tracking_uri())
