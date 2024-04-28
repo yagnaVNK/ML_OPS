@@ -93,6 +93,6 @@ def training_pipeline(classes: list,
 
     accuracies_classifier = eval_classifier(classes,classifier,ds_test)
 
-
+    generate_constellations(classes,HAE_model,HQA_model,ds_test)
 
     return accuracies_classifier, accuracies_Hae, None , HAE_model, None

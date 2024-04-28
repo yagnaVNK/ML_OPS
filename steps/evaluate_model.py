@@ -1,6 +1,6 @@
 import logging
 from zenml import step
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, Subset
 from src.HAE import *
 from src.HQA import *
 from src.efficientNet_classifer import *
@@ -102,7 +102,7 @@ def eval_HAE(classes: list,model: HAE,classifier: ExampleNetwork,ds_test: Modula
         plt.close(fig)
     return accuracies
 
-@step(enable_cache=False,enable_artifact_visualization=True,experiment_tracker =  experiment_tracker.name,
+@step(enable_cache=True,enable_artifact_visualization=True,experiment_tracker =  experiment_tracker.name,
       settings={
         "experiment_tracker.mlflow": mlflow_settings
     })
@@ -116,6 +116,7 @@ def eval_HQA(classes: list, model: HQA, classifier: ExampleNetwork, ds_test: Mod
     num_test_examples = len(ds_test)
     
     with mlflow.start_run(run_name=run_name, nested=True):
+        
         for j in range(layers):
             for k in range(num_recons):
                 y_raw_preds = np.empty((num_test_examples, num_classes))
@@ -203,34 +204,77 @@ def eval_HQA(classes: list, model: HQA, classifier: ExampleNetwork, ds_test: Mod
         fig.savefig(plot_path)
         mlflow.log_artifact(plot_path)
         plt.close(fig)
-
-        index = 60
-        model = hqa[0]
-        # Retrieve z_q from the codebook
-        z_q = model.codebook.lookup(torch.tensor(index).to(device)).squeeze()
-    
-        # Decode
-        reconstructed_signal = model.decode(z_q).squeeze().detach().cpu().numpy()
-    
-        # Plot constellation diagram
-        fig, ax = plt.subplots(figsize=(6, 6))
-        ax.scatter(reconstructed_signal.real, reconstructed_signal.imag, color='blue', alpha=0.8, label='Reconstructed Signal')
-        ax.set_xlabel('Real')
-        ax.set_ylabel('Imaginary')
-        ax.set_title(f'Constellation Diagram - Codebook Index {index}')
-        ax.legend()
-        ax.grid(True)
-    
-        # Save the plot
-        plot_path = f"./vis/constellation_diagram_codebook_index_{index}.png"
-        fig.savefig(plot_path)
-        mlflow.log_artifact(plot_path)
-        plt.close(fig)
-    
+        
+        
 
     return accuracies
 
+@step(enable_cache=False,enable_artifact_visualization=True,experiment_tracker =  experiment_tracker.name,
+      settings={
+        "experiment_tracker.mlflow": mlflow_settings
+    })
+def generate_constellations(classes: list,HAE_model: HAE, HQA_model: HQA ,ds_test: ModulationsDataset) -> None:
 
+    models = ["HAE","HQA"]
+    hqa_save_paths = [HAE_model,HQA_model]
+    for model,hqa_save_path in zip(models,hqa_save_paths):
+        hqa_model = hqa_save_path
+        for target in range(6):
+            indices = [i for i in range(len(ds_test)) if ds_test[i][1] == target]
+            name = [name for name, num in ds_test.class_dict.items() if num == target][0]
+            my_subset = Subset(ds_test, indices)
+            loader = DataLoader(my_subset, batch_size=len(indices))
+            test_x, _ = next(iter(loader))
+            
+            for ii in [0,1,5]:
+                plt.figure(figsize=(5, 5))
+                if ii == 0 :
+                    x_i = []
+                    x_q = []
+                    for k in range(len(indices)):
+                        test_xiq = test_x.detach().cpu().numpy()[k,:,:]
+                        x=test_xiq[0,:]+ 1j*test_xiq[1,:]
+                        x_i.append(np.real(x))
+                        x_q.append(np.imag(x))
+                    
+                    plt.plot(x_i,x_q,'r',linestyle="",marker="o")
+                    plt.axis('off')  # Turn off axis
+                    plt.xticks([])
+                    plt.yticks([])
+                    plt.xlim(-1, 1)
+                    plt.ylim(-1, 1)
+                    x_i = []
+                    x_q = []
+                else:
+                    hqa = hqa_model[ii-1]
+                    hqa.eval()
+                    if model == 'HAE':
+                        test_y = hqa.reconstruct(test_x)
+                    else:
+                        z_q, cc = hqa.codebook.quantize(hqa.encode(test_x))
+                        test_y = hqa.reconstruct_from_codes(cc)
+                    test_y = test_y.detach().cpu().numpy()
+                    
+                    x_i = []
+                    x_q = []
+                    for k in range(len(indices)):
+                        test_xiq = test_y[k,:,:]
+                        x = test_xiq[0,:] + 1j * test_xiq[1,:]
+                        x_i.append(np.real(x))
+                        x_q.append(np.imag(x))
+                    plt.plot(x_i, x_q, 'r', linestyle="", marker="o")
+                    plt.xticks([])
+                    plt.yticks([])
+                    plt.xlim(-1, 1)
+                    plt.ylim(-1, 1)
+                    plt.axis('off')  # Turn off axis
+                
+                plt.tight_layout()
+                plt.savefig(f'Constellations/{name}_layer{ii}_{model}.jpg')
+                mlflow.log_artifact(f'Constellations/{name}_layer{ii}_{model}.jpg')
+                plt.close()
+
+    
 
 @step(enable_cache=True,enable_artifact_visualization=True,experiment_tracker =  experiment_tracker.name,
       settings={

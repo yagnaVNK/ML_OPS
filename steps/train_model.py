@@ -96,7 +96,7 @@ def train_HAE(dl_train: DataLoader,
     return hae
 
 
-@step(enable_cache=False,experiment_tracker = experiment_tracker.name,
+@step(enable_cache=True,experiment_tracker = experiment_tracker.name,
       settings={
         "experiment_tracker.mlflow": mlflow_settings
     })

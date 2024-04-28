@@ -579,11 +579,11 @@ class HQA(pl.LightningModule):
                     os.makedirs(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}')
                 fig = scplot.get_figure()
                 fig.savefig(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}/reset{self.codebook_resets}.png')
-                plt.close()
+                
                 plot_path = f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{len(self)}/reset{self.codebook_resets}.png'
                 mlflow.log_artifact(plot_path)
-            self.plot_codebook_histograms(self.codebook_resets)
-            plt.close()
+                self.plot_codebook_histograms(self.codebook_resets)
+                plt.close()
         
         self.log("loss", loss, prog_bar=True, on_step=True, on_epoch=True)
         self.log("cos_loss", cos_loss, prog_bar=True, on_step=True, on_epoch=True)
@@ -649,7 +649,6 @@ class HQA(pl.LightningModule):
         ax.set_title(f'Codebook Usage Histogram - Layer {layer}')
         
         fig.savefig(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{layer}/hist_{step}.png')
-        
         # Log the figure as an artifact
         mlflow.log_artifact(f'{self.output_dir}/{HQA.VISUALIZATION_DIR}/layer{layer}/hist_{step}.png')
         plt.close()
