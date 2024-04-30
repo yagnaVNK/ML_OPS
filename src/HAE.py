@@ -270,8 +270,10 @@ class HAE(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(ignore=['prev_model'])
         self.prev_model = prev_model
+        
+        self.batch_norm = batch_norm
         if compress ==2:
-            self.encoder = Encoder(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=True)
+            self.encoder = Encoder(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=self.batch_norm)
             self.decoder = Decoder(
                 codebook_dim,
                 input_feat_dim,
@@ -280,7 +282,7 @@ class HAE(pl.LightningModule):
                 num_res_blocks=num_res_blocks
             )
         else:
-            self.encoder = Encoder2(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=True)
+            self.encoder = Encoder2(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=self.batch_norm)
             self.decoder = Decoder2(
                 codebook_dim,
                 input_feat_dim,
@@ -299,27 +301,18 @@ class HAE(pl.LightningModule):
         self.cos_reset = cos_reset
         self.train_outputs = {}
         self.val_outputs = {}
+        self.enc_hidden_dim = enc_hidden_dim
+        self.dec_hidden_dim = dec_hidden_dim
+        self.input_feat_dim = input_feat_dim
+        self.compress = compress
+        self.num_res_blocks = num_res_blocks
     
         # Tells pytorch lightinig to use our custom training loop
         self.automatic_optimization = False
         mlflow.set_experiment("training_pipeline")
         mlflow.start_run(run_name = f"HAE Layer {self.layer}",nested=True)
         # Log hyperparameters
-        mlflow.log_params({
-            "input_feat_dim": input_feat_dim,
-            "codebook_dim": codebook_dim,
-            "enc_hidden_dim": enc_hidden_dim,
-            "dec_hidden_dim": dec_hidden_dim,
-            "num_res_blocks": num_res_blocks,
-            "lr": lr,
-            "decay": decay,
-            "clip_grads": clip_grads,
-            "layer": layer,
-            "Cos_coeff": Cos_coeff,
-            "batch_norm": batch_norm,
-            "cos_reset": cos_reset,
-            "compress": compress
-        })
+        
                 
 
     def forward(self, x, soft = True):
@@ -331,9 +324,25 @@ class HAE(pl.LightningModule):
         return z_e_lower_tilde, z_e_lower, z_e
 
     def on_train_start(self):
-        cosList = [0.1,0.05,0.01,0.005,0.0001]
+        #cosList = [0.1,0.05,0.01,0.005,0.0001]
+        cosList = [0,0,0,0,0]
         self.Cos_coeff = cosList[self.layer]
-        
+        mlflow.log_params({
+            "input_feat_dim": self.input_feat_dim,
+            "codebook_dim": self.codebook_dim,
+            "enc_hidden_dim": self.enc_hidden_dim,
+            "dec_hidden_dim": self.dec_hidden_dim,
+            "num_res_blocks": self.num_res_blocks,
+            "lr": self.lr,
+            "decay": self.decay,
+            "clip_grads": self.clip_grads,
+            "layer": self.layer,
+            "Cos_coeff": self.Cos_coeff,
+            "batch_norm": self.batch_norm,
+            "cos_reset": self.cos_reset,
+            "compress": self.compress
+        })
+
     def on_fit_end(self):
         mlflow.end_run()
         

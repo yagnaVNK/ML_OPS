@@ -1,4 +1,3 @@
-
 from zenml import step
 from torch.utils.data import DataLoader
 from src.HAE import *
@@ -17,7 +16,7 @@ mlflow_settings = MLFlowExperimentTrackerSettings(
 experiment_tracker = Client().active_stack.experiment_tracker
 
 
-@step(enable_cache=True,experiment_tracker = experiment_tracker.name,
+@step(enable_cache=False,experiment_tracker = experiment_tracker.name,
       settings={
         "experiment_tracker.mlflow": mlflow_settings
     })
@@ -66,7 +65,7 @@ def train_HAE(dl_train: DataLoader,
                 hae_prev,
                 enc_hidden_dim=enc_hidden_sizes[i],
                 dec_hidden_dim=dec_hidden_sizes[i],
-                num_res_blocks=num_res_blocks + 2 ,
+                num_res_blocks=num_res_blocks ,
                 batch_norm = batch_norm,
                 layer = i,
                 cos_reset = cos_reset,
@@ -76,19 +75,6 @@ def train_HAE(dl_train: DataLoader,
                 lr=hae_lr
             )
         
-        '''
-        mlflow_logger = MLFlowLogger(experiment_name= "training_pipeline", run_name=f"HAE Layer {i+1}" ,tracking_uri=Client().active_stack.experiment_tracker.get_tracking_uri())
-        mlflow_logger.log_hyperparams({
-            "enc_hidden_size": enc_hidden_sizes[i],
-            "dec_hidden_size": dec_hidden_sizes[i],
-            "batch_norm": batch_norm,
-            "cos_reset": cos_reset,
-            "compress": compress,
-            "codebook_dim": codeword_dim,
-            "Cos_coeff": Cos_coeff,
-            "lr": hae_lr,
-        })
-        '''
         trainer = pl.Trainer(max_epochs=epochs,logger=None, devices=[0], accelerator = 'gpu',num_sanity_val_steps=0)
         
         trainer.fit(hae.float(), dl_train, dl_val)
@@ -96,7 +82,7 @@ def train_HAE(dl_train: DataLoader,
     return hae
 
 
-@step(enable_cache=True,experiment_tracker = experiment_tracker.name,
+@step(enable_cache=False,experiment_tracker = experiment_tracker.name,
       settings={
         "experiment_tracker.mlflow": mlflow_settings
     })
@@ -155,7 +141,7 @@ def train_HQA(dl_train: DataLoader,
                 hqa_prev,
                 enc_hidden_dim=enc_hidden_sizes[i],
                 dec_hidden_dim=dec_hidden_sizes[i],
-                num_res_blocks=num_res_blocks +2 ,
+                num_res_blocks=num_res_blocks  ,
                 KL_coeff = KL_coeff,
                 CL_coeff = CL_coeff,
                 Cos_coeff = Cos_coeff,
@@ -174,24 +160,7 @@ def train_HQA(dl_train: DataLoader,
         hqa.encoder = model[i].encoder.eval()
         hqa.decoder = model[i].decoder.eval()
         print("loaded the encoder and decoder pretrained models")
-        '''
-        mlflow_logger = MLFlowLogger(experiment_name= "training_pipeline" ,run_name=f"HQA Layer {i+1}" , tracking_uri=Client().active_stack.experiment_tracker.get_tracking_uri())
-        mlflow_logger.log_hyperparams({
-            "enc_hidden_size": enc_hidden_sizes[i],
-            "dec_hidden_size": dec_hidden_sizes[i],
-            "KL_coeff": KL_coeff,
-            "CL_coeff": CL_coeff,
-            "Cos_coeff": Cos_coeff,
-            "batch_norm": batch_norm,
-            "codebook_init": codebook_init,
-            "codeword_reset": codeword_reset,
-            "codebook_slots": codebook_slots,
-            "codebook_dim": codeword_dim,
-            "lr": hqa_lr,
-            "cos_reset": cos_reset,
-            "compress": compress,
-        })
-        '''
+
         trainer = pl.Trainer(max_epochs=epochs,logger=None, devices=[0], accelerator = 'gpu',num_sanity_val_steps=0)
         trainer.fit(hqa.float(), dl_train, dl_val)
         hqa_prev = hqa.eval()
