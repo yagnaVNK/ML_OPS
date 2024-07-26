@@ -7,8 +7,10 @@ from torchsig.models.iq_models.efficientnet.efficientnet import efficientnet_b4,
 from src.utils import *
 from zenml.client import Client
 import lightning.pytorch as pl
+import torchvision.models as models
 import timm
 from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import MLFlowExperimentTrackerSettings
+
 
 mlflow_settings = MLFlowExperimentTrackerSettings(
     nested=True,
@@ -17,38 +19,34 @@ mlflow_settings = MLFlowExperimentTrackerSettings(
 
 experiment_tracker = Client().active_stack.experiment_tracker
 
-
-
-@step(enable_cache=True,experiment_tracker = experiment_tracker.name,
+@step(enable_cache=True, experiment_tracker=experiment_tracker.name,
       settings={
         "experiment_tracker.mlflow": mlflow_settings
     })
 def train_classifier(dl_train: DataLoader,
-                dl_val: DataLoader,
-                epochs: int,
-                train_bool: bool,
-                eff_net_PATH: str,
-                classes: list,
-                in_channels: int) -> ExampleNetwork:
+                     dl_val: DataLoader,
+                     epochs: int,
+                     train_bool: bool,
+                     eff_net_PATH: str,
+                     classes: list,
+                     in_channels: int) -> ExampleNetwork:
     
-    model = create_effnet(
-        timm.create_model(
-            "efficientnet_b4",
-            num_classes=len(classes),
-            in_chans=in_channels,
-        )
-    )
+
+    model = SimpleCNN1D(in_channels=in_channels, num_classes=len(classes))
+    #model = EnhancedCNN1D(in_channels=in_channels, num_classes=len(classes))
     
     example_model = ExampleNetwork(model, dl_train, dl_val)
-    example_model = example_model.float().to(device)    
+    example_model = example_model.float().to(device)
+    
     trainer = Trainer(
-        max_epochs=epochs, 
-        devices=1, 
+        max_epochs=epochs,
+        devices=1,
         accelerator="gpu"
     )
+    
     if train_bool:
-        trainer.fit(example_model,dl_train,dl_val)
-        torch.save(example_model.state_dict(),eff_net_PATH)
+        trainer.fit(example_model, dl_train, dl_val)
+        torch.save(example_model.state_dict(), eff_net_PATH)
         print("trained the model")
         return example_model
     else:

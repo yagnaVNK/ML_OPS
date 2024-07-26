@@ -45,6 +45,14 @@ def training_pipeline(classes: list,
                                                                     batch_size=batch_size)
     '''
     dl_train,ds_train,dl_test,ds_test,dl_val,ds_val = getDataLoader_EEG(classes=classes,data_dir=r"Processed_data",batch_size=batch_size)
+
+    classifier = train_classifier(dl_train = dl_train,
+                              dl_val = dl_val,
+                              epochs = classifier_epochs,
+                              train_bool = trainbool,
+                              eff_net_PATH = eff_net_path,
+                              classes = classes,
+                              in_channels = input_feature_dim)
     
     HAE_model = train_HAE(  dl_train = dl_train,
                             dl_val = dl_val,
@@ -60,7 +68,7 @@ def training_pipeline(classes: list,
                             compress= compress,
                             Cos_coeff = hae_Cos_coeff,
                             hae_lr=hae_lr)
-    
+    '''
     HQA_model = train_HQA(  dl_train = dl_train,
                             dl_val = dl_val,
                             epochs = Hqa_epochs,
@@ -83,17 +91,10 @@ def training_pipeline(classes: list,
                             model = HAE_model,
                             hqa_lr = hqa_lr)
     
-    classifier = train_classifier(dl_train = dl_train,
-                                  dl_val = dl_val,
-                                  epochs = classifier_epochs,
-                                  train_bool = trainbool,
-                                  eff_net_PATH = eff_net_path,
-                                  classes = classes,
-                                  in_channels = input_feature_dim)
-    
+    '''
     accuracies_Hae = eval_HAE(classes,HAE_model,classifier,ds_test)
     
-    accuracies_Hqa = eval_HQA(classes,HQA_model,classifier,ds_test)
+    #accuracies_Hqa = eval_HQA(classes,HQA_model,classifier,ds_test)
 
     accuracies_classifier = eval_classifier(classes,classifier,ds_test)
 

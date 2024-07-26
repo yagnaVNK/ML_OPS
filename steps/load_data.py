@@ -87,6 +87,11 @@ def getDataLoader_EEG(classes: list,
 
     dl_train = DataLoader(ds_train,batch_size=batch_size,shuffle=True)
 
+    for data, labels in dl_train:
+        print(data.shape)  
+        print(labels)
+        break
+
     ds_val = EEG(data_dir,split="val")
 
     dl_val = DataLoader(ds_val,batch_size=batch_size,shuffle=False)

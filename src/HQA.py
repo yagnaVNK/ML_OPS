@@ -24,6 +24,9 @@ from src.utils import *
 from sklearn.manifold import TSNE
 
 
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+
+
 def mish(x):
     return x * torch.tanh(F.softplus(x))
 

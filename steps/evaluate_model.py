@@ -11,6 +11,7 @@ from src.utils import *
 from zenml.client import Client
 import lightning.pytorch as pl
 from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import MLFlowExperimentTrackerSettings
+from src.EEG_Dataset import CustomDataset as EEG
 
 mlflow_settings = MLFlowExperimentTrackerSettings(
     nested=True,
@@ -21,11 +22,11 @@ experiment_tracker = Client().active_stack.experiment_tracker
 print(experiment_tracker)
 
 
-@step(enable_cache=True,enable_artifact_visualization=True, experiment_tracker =experiment_tracker.name,
+@step(enable_cache=False,enable_artifact_visualization=True, experiment_tracker =experiment_tracker.name,
       settings={
         "experiment_tracker.mlflow": mlflow_settings
     })
-def eval_HAE(classes: list,model: HAE,classifier: ExampleNetwork,ds_test: ModulationsDataset) -> list:
+def eval_HAE(classes: list,model: HAE,classifier: ExampleNetwork,ds_test: EEG) -> list:
     """
     
     """
@@ -102,11 +103,11 @@ def eval_HAE(classes: list,model: HAE,classifier: ExampleNetwork,ds_test: Modula
         plt.close(fig)
     return accuracies
 
-@step(enable_cache=True,enable_artifact_visualization=True,experiment_tracker =  experiment_tracker.name,
+@step(enable_cache=False,enable_artifact_visualization=True,experiment_tracker =  experiment_tracker.name,
       settings={
         "experiment_tracker.mlflow": mlflow_settings
     })
-def eval_HQA(classes: list, model: HQA, classifier: ExampleNetwork, ds_test: ModulationsDataset) -> list:
+def eval_HQA(classes: list, model: HQA, classifier: ExampleNetwork, ds_test: EEG) -> list:
     accuracies = []
     num_recons = 1
     num_classes = len(classes)
@@ -213,7 +214,7 @@ def eval_HQA(classes: list, model: HQA, classifier: ExampleNetwork, ds_test: Mod
       settings={
         "experiment_tracker.mlflow": mlflow_settings
     })
-def generate_constellations(classes: list,HAE_model: HAE, HQA_model: HQA ,ds_test: ModulationsDataset) -> None:
+def generate_constellations(classes: list,HAE_model: HAE, HQA_model: HQA ,ds_test: EEG) -> None:
 
     models = ["HAE","HQA"]
     hqa_save_paths = [HAE_model,HQA_model]
@@ -276,11 +277,11 @@ def generate_constellations(classes: list,HAE_model: HAE, HQA_model: HQA ,ds_tes
 
     
 
-@step(enable_cache=True,enable_artifact_visualization=True,experiment_tracker =  experiment_tracker.name,
+@step(enable_cache=False,enable_artifact_visualization=True,experiment_tracker =  experiment_tracker.name,
       settings={
         "experiment_tracker.mlflow": mlflow_settings
     })
-def eval_classifier(classes: list,classifier: ExampleNetwork,ds_test: ModulationsDataset) -> list:
+def eval_classifier(classes: list,classifier: ExampleNetwork,ds_test: EEG) -> list:
     """
     
     """

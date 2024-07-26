@@ -24,6 +24,9 @@ from src.utils import *
 from sklearn.manifold import TSNE
 
 
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+
+
 def mish(x):
     return x * torch.tanh(F.softplus(x))
 
@@ -350,9 +353,14 @@ class HQA(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(ignore=['prev_model'])
         self.prev_model = prev_model
+        self.compress = compress
+        self.batch_norm = batch_norm
+        self.codebook_init = codebook_init
+        self.num_res_blocks = num_res_blocks
+        self.gs_temp = gs_temp
         self.codebook = VQCodebook(codebook_slots, codebook_dim, gs_temp)
         if compress == 2:
-            self.encoder = Encoder(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=True)
+            self.encoder = Encoder(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=self.batch_norm)
             self.decoder = Decoder(
                 codebook_dim,
                 input_feat_dim,
@@ -361,7 +369,7 @@ class HQA(pl.LightningModule):
                 num_res_blocks=num_res_blocks
             )
         else:
-            self.encoder = Encoder2(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=True)
+            self.encoder = Encoder2(input_feat_dim, codebook_dim, enc_hidden_dim, num_res_blocks=num_res_blocks,batch_norm=self.batch_norm)
             self.decoder = Decoder2(
                 codebook_dim,
                 input_feat_dim,
@@ -372,6 +380,10 @@ class HQA(pl.LightningModule):
         self.normalize = GlobalNormalization1(codebook_dim, scale=True)
         self.out_feat_dim = input_feat_dim
         self.codebook_dim = codebook_dim
+        self.codebook_slots = codebook_slots
+        self.enc_hidden_dim = enc_hidden_dim
+        self.dec_hidden_dim = dec_hidden_dim
+        self.input_feat_dim = input_feat_dim
         self.lr = lr
         self.decay = decay
         self.clip_grads = clip_grads
@@ -391,28 +403,7 @@ class HQA(pl.LightningModule):
         mlflow.set_experiment("training_pipeline")
         mlflow.start_run(run_name = f"HQA Layer {self.layer}",nested=True)
         # Log hyperparameters
-        mlflow.log_params({
-            "input_feat_dim": input_feat_dim,
-            "codebook_slots": codebook_slots,
-            "codebook_dim": codebook_dim,
-            "enc_hidden_dim": enc_hidden_dim,
-            "dec_hidden_dim": dec_hidden_dim,
-            "gs_temp": gs_temp,
-            "num_res_blocks": num_res_blocks,
-            "lr": lr,
-            "decay": decay,
-            "clip_grads": clip_grads,
-            "codebook_init": codebook_init,
-            "output_dir": output_dir,
-            "layer": layer,
-            "KL_coeff": KL_coeff,
-            "CL_coeff": CL_coeff,
-            "Cos_coeff": Cos_coeff,
-            "batch_norm": batch_norm,
-            "reset_choice": reset_choice,
-            "cos_reset": cos_reset,
-            "compress": compress
-        })
+        
 
         self.init_codebook(codebook_init,self.dataloader)
         self.create_output = output_dir is not None 
@@ -436,7 +427,7 @@ class HQA(pl.LightningModule):
         elif codebook_init == 'normal':
             self.codebook.codebook.weight.data.normal_()
             print("Normal Codebook initialization")
-        elif codebook_init == "normal1":
+        elif codebook_init == "kmeans":
             class_means, class_stds = self.calculate_class_stats(dataloader)
             num_slots_per_class = self.codebook.codebook_slots // 6  
             for class_idx in range(6):
@@ -485,8 +476,30 @@ class HQA(pl.LightningModule):
         self.code_count = torch.zeros(self.codebook.codebook_slots, device=self.device, dtype=torch.float64)
         self.codebook_resets = 0
         #cosList = [0.1,0.05,0.01,0.005,0.0001]
-        cosList = [0.7,0,0,0,0]
+        cosList = [0,0,0,0,0]
         self.Cos_coeff = cosList[self.layer]
+        mlflow.log_params({
+            "input_feat_dim": self.input_feat_dim,
+            "codebook_slots": self.codebook_slots,
+            "codebook_dim": self.codebook_dim,
+            "enc_hidden_dim": self.enc_hidden_dim,
+            "dec_hidden_dim": self.dec_hidden_dim,
+            "gs_temp": self.gs_temp,
+            "num_res_blocks": self.num_res_blocks,
+            "lr": self.lr,
+            "decay": self.decay,
+            "clip_grads": self.clip_grads,
+            "codebook_init": self.codebook_init,
+            "output_dir": self.output_dir,
+            "layer": self.layer,
+            "KL_coeff": self.KL_coeff,
+            "CL_coeff": self.CL_coeff,
+            "Cos_coeff": self.Cos_coeff,
+            "batch_norm": self.batch_norm,
+            "reset_choice": self.reset_choice,
+            "cos_reset": self.cos_reset,
+            "compress": self.compress
+        })
 
         
     
