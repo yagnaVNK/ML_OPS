@@ -6,7 +6,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Run the training pipeline with custom parameters.')
     parser.add_argument('--iq_samples', type=int, default=1024)
     parser.add_argument('--samples_per_class', type=int, default=8000)
-    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--Hae_epochs', type=int, default=10)
     parser.add_argument('--Hqa_epochs', type=int, default=20)
     parser.add_argument('--classifier_epochs', type=int, default=10)
@@ -38,7 +38,9 @@ if __name__ == "__main__":
     eff_net_PATH = f"./src/classifiers/{args.classifier_epochs}epochs_classifier.pt"
     enc_hidden_sizes=[16, 16, 32, 64, 128, 256]
     dec_hidden_sizes=[16, 64, 256, 512, 1024, 2048]
-    training_pipeline(classes=["4ask","8pam","16psk","32qam_cross","2fsk","ofdm-256"],
+    #classes = ["4ask","8pam","16psk","32qam_cross","2fsk","ofdm-256"]
+    classes = ["Anger","Disgust","Fear","Sadness","Neutral","Amusement","Inspiration","Joy","Tenderness"]
+    training_pipeline(classes=classes,
                       iq_samples=args.iq_samples, 
                       enc_hidden_sizes=enc_hidden_sizes,
                       dec_hidden_sizes=dec_hidden_sizes,

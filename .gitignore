@@ -5,3 +5,4 @@
 /codebooks
 *.pt
 /src/classifiers
+/Processed_data

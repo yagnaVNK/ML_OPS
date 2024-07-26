@@ -424,7 +424,7 @@ class HQA(pl.LightningModule):
         elif codebook_init == 'normal':
             self.codebook.codebook.weight.data.normal_()
             print("Normal Codebook initialization")
-        elif codebook_init == "normal1":
+        elif codebook_init == "kmeans":
             class_means, class_stds = self.calculate_class_stats(dataloader)
             num_slots_per_class = self.codebook.codebook_slots // 6  
             for class_idx in range(6):

@@ -8,6 +8,7 @@ from typing_extensions import Annotated
 from typing import Tuple
 import torch
 import torchsig.transforms as ST
+from src.EEG_Dataset import CustomDataset as EEG
 
 @step(enable_cache=True)
 def getDataLoader(classes: list,
@@ -69,3 +70,29 @@ def getDataLoader(classes: list,
 
     return dl_train,ds_train,dl_test,ds_test,dl_val,ds_val
 
+
+@step(enable_cache=True)
+def getDataLoader_EEG(classes: list,
+                      data_dir:str,
+                   batch_size: int) -> Tuple[
+                       Annotated[DataLoader,"train_dl"],
+                       Annotated[EEG,"train_ds"],
+                       Annotated[DataLoader,"test_dl"],
+                       Annotated[EEG,"test_ds"],
+                       Annotated[DataLoader,"val_dl"],
+                       Annotated[EEG,"val_ds"],
+                       ]:
+    
+    ds_train = EEG(data_dir,split="train")
+
+    dl_train = DataLoader(ds_train,batch_size=batch_size,shuffle=True)
+
+    ds_val = EEG(data_dir,split="val")
+
+    dl_val = DataLoader(ds_val,batch_size=batch_size,shuffle=False)
+
+    ds_test = EEG(data_dir,split="test")
+
+    dl_test = DataLoader(ds_test,batch_size=batch_size,shuffle=False)
+
+    return dl_train,ds_train,dl_test,ds_test,dl_val,ds_val

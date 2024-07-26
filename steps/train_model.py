@@ -110,7 +110,7 @@ def train_HQA(dl_train: DataLoader,
     """
     
     """
-    
+    model = model.to('cuda')
     for i in range(layers): 
         print(f'training Layer {i}')
         print("==============================================")

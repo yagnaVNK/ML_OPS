@@ -3,10 +3,11 @@ from zenml import step
 from torch.utils.data import DataLoader
 from src.efficientNet_classifer import *
 import torch
-from torchsig.models.iq_models.efficientnet.efficientnet import efficientnet_b4
+from torchsig.models.iq_models.efficientnet.efficientnet import efficientnet_b4, create_effnet
 from src.utils import *
 from zenml.client import Client
 import lightning.pytorch as pl
+import timm
 from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import MLFlowExperimentTrackerSettings
 
 mlflow_settings = MLFlowExperimentTrackerSettings(
@@ -27,12 +28,17 @@ def train_classifier(dl_train: DataLoader,
                 epochs: int,
                 train_bool: bool,
                 eff_net_PATH: str,
-                classes: list) -> ExampleNetwork:
+                classes: list,
+                in_channels: int) -> ExampleNetwork:
     
-    model = efficientnet_b4(
-        pretrained=False,
-        num_classes=len(classes)
+    model = create_effnet(
+        timm.create_model(
+            "efficientnet_b4",
+            num_classes=len(classes),
+            in_chans=in_channels,
+        )
     )
+    
     example_model = ExampleNetwork(model, dl_train, dl_val)
     example_model = example_model.float().to(device)    
     trainer = Trainer(
