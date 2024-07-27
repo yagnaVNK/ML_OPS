@@ -30,8 +30,19 @@ def train_classifier(dl_train: DataLoader,
                      eff_net_PATH: str,
                      classes: list,
                      in_channels: int) -> ExampleNetwork:
+    '''
+    mdl = create_effnet(
+        timm.create_model(
+            "efficientnet_b0",
+            num_classes=9, #modify the total classes
+            in_chans=32, #modify the total input channels
+            drop_path_rate=drop_path_rate,
+            drop_rate=drop_rate,
+        )
+    )
+    # commented to not use efficient net
+    '''
     
-
     model = SimpleCNN1D(in_channels=in_channels, num_classes=len(classes))
     #model = EnhancedCNN1D(in_channels=in_channels, num_classes=len(classes))
     

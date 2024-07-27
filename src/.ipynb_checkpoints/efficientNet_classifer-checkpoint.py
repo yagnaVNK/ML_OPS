@@ -13,7 +13,7 @@ class SimpleCNN1D(nn.Module):
         self.conv1 = nn.Conv1d(in_channels, 32, kernel_size=3, padding=1)
         self.conv2 = nn.Conv1d(32, 64, kernel_size=3, padding=1)
         self.conv3 = nn.Conv1d(64, 128, kernel_size=3, padding=1)
-        self.pool = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.pool = nn.MaxPool1d(kernel_size=2, stride=2) #Try adaptive pooling
         
         # Calculate the flatten size dynamically
         self.flatten_size = self._get_flatten_size(in_channels, 7500)
