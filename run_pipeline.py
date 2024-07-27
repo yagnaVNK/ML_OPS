@@ -22,7 +22,7 @@ def parse_args():
     parser.add_argument('--compress', type=int, default=2)
     parser.add_argument('--hae_lr', type=float, default=4e-4)
     parser.add_argument('--hqa_lr', type=float, default=4e-4)
-    parser.add_argument('--hae_Cos_coeff', type=float, default=0.5)
+    parser.add_argument('--hae_Cos_coeff', type=float, default=0.0)
     parser.add_argument('--hqa_Cos_coeff', type=float, default=0)
     parser.add_argument('--KL_coeff', type=float, default=0.1)
     parser.add_argument('--CL_coeff', type=float, default=0.005)
