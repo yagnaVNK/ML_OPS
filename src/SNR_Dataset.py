@@ -31,20 +31,17 @@ class DualSNRModulationsDataset(ModulationsDataset):
         super(DualSNRModulationsDataset, self).__init__(*args, **kwargs)
         self.low_snr_range = low_snr_range
         self.high_snr_range = high_snr_range
-        self.normalization = Normalize(norm=np.inf)  # Normalization transform
+        self.normalization = Normalize(norm=np.inf)
 
     def __getitem__(self, item):
-        # Get the base signal and its label
         signal, label = super(DualSNRModulationsDataset, self).__getitem__(item)
         
-        # Apply low SNR to the signal
         low_snr_transform = TargetSNR(self.low_snr_range)
         low_snr_signal = low_snr_transform(signal)
-        low_snr_signal = self.normalization(low_snr_signal)  # Normalize the low SNR signal
+        low_snr_signal = self.normalization(low_snr_signal) 
         
-        # Apply high SNR to the signal
         high_snr_transform = TargetSNR(self.high_snr_range)
         high_snr_signal = high_snr_transform(signal)
-        high_snr_signal = self.normalization(high_snr_signal)  # Normalize the high SNR signal
+        high_snr_signal = self.normalization(high_snr_signal) 
         
         return low_snr_signal, high_snr_signal, label
