@@ -7,3 +7,5 @@
 /src/classifiers
 /Processed_data
 /Constellations
+requirements.txt
+/torchsigenv
