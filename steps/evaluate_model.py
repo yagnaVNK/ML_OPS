@@ -282,7 +282,7 @@ def generate_constellations(classes: list,HAE_model: HAE, HQA_model: HQA ,ds_tes
       settings={
         "experiment_tracker.mlflow": mlflow_settings
     })
-def eval_classifier(classes: list,classifier: ExampleNetwork,ds_test: EEG) -> list:
+def eval_classifier(classes: list,classifier: ExampleNetwork,ds_test: ModulationsDataset) -> list:
     """
     
     """
