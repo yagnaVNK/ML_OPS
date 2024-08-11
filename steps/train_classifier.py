@@ -31,13 +31,11 @@ def train_classifier(dl_train: DataLoader,
                      classes: list,
                      in_channels: int) -> ExampleNetwork:
     
-    mdl = create_effnet(
+    model = create_effnet(
         timm.create_model(
             "efficientnet_b4",
             num_classes=6, #modify the total classes
             in_chans=2, #modify the total input channels
-            drop_path_rate=drop_path_rate,
-            drop_rate=drop_rate,
         )
     )
     # commented to not use efficient net

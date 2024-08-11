@@ -106,13 +106,13 @@ def training_pipeline(classes: list,
     accuracies_classifier = eval_classifier(classes, classifier, ds_test)
     
     
-    #ds_test_adv = create_adversarial_dataset_step(original_dataset=ds_test)
+    ds_test_adv = create_adversarial_dataset_step(original_dataset=ds_test)
     
     # New evaluation step with adversarially attacked data
-    #adversarial_eval_results = eval_three_models(classes, HAE_model, HQA_model, classifier, ds_test_adv)
+    adversarial_eval_results = eval_three_models(classes, HAE_model, HQA_model, classifier, ds_test_adv)
     
     
     # Generate constellation diagrams (if needed)
     generate_constellations(classes, HAE_model, HQA_model, ds_test)
 
-    return accuracies_classifier, accuracies_Hae, accuracies_Hqa, HAE_model, HQA_model, None
+    return accuracies_classifier, accuracies_Hae, accuracies_Hqa, HAE_model, HQA_model, adversarial_eval_results
