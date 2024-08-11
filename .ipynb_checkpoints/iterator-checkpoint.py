@@ -13,14 +13,16 @@ argument_sets.append("--iq_samples 1024 --samples_per_class 8000 --batch_size 64
 '''
 #argument_sets.append("--iq_samples 1024 --samples_per_class 8000 --batch_size 64 --Hae_epochs 10 --Hqa_epochs 20 --classifier_epochs 10 --layers 3 --input_feature_dim 2 --codebook_slots 128 --codeword_dim 128 --codebook_init normal --batch_norm 1 --reset_choice 1 --num_res_blocks 1 --cos_reset 1 --compress 2 --hae_lr 0.0004 --hqa_lr 0.0004 --hae_Cos_coeff 0 --hqa_Cos_coeff 0 --KL_coeff 0.1 --CL_coeff 0.005 --visual_dir ./codebooks/ --trainbool True")
 
-#argument_sets.append("--iq_samples 1024 --samples_per_class 8000 --batch_size 64 --Hae_epochs 10 --Hqa_epochs 10 --classifier_epochs 10 --layers 3 --input_feature_dim 2 --codebook_slots 128 --codeword_dim 128 --codebook_init normal --batch_norm 1 --reset_choice 1 --num_res_blocks 0  --compress 2 --hae_lr 0.0004 --hqa_lr 0.0004  --CL_coeff 0 --visual_dir ./codebooks/ --trainbool True")
+argument_sets.append("--iq_samples 1024 --samples_per_class 8000 --batch_size 64 --Hae_epochs 10 --Hqa_epochs 10 --classifier_epochs 10 --layers 3 --input_feature_dim 2 --codebook_slots 128 --codeword_dim 128 --codebook_init normal --batch_norm 1 --reset_choice 1 --num_res_blocks 1  --compress 2 --hae_lr 0.0004 --hqa_lr 0.0004  --CL_coeff 0 --visual_dir ./codebooks/ --trainbool True")
+#argument_sets.append("--iq_samples 1024 --samples_per_class 8000 --batch_size 64 --Hae_epochs 10 --Hqa_epochs 10 --classifier_epochs 10 --layers 3 --input_feature_dim 2 --codebook_slots 128 --codeword_dim 128 --codebook_init normal --batch_norm 1 --reset_choice 1 --num_res_blocks 1  --compress 2 --hae_lr 0.0004 --hqa_lr 0.0004  --CL_coeff 0 --visual_dir ./codebooks/ --trainbool True")
 
+''''
 argument_sets.append(" --batch_size 32 --Hae_epochs 30 --Hqa_epochs 10 --hae_Cos_coeff 0.1 --classifier_epochs 30 --layers 2 --input_feature_dim 32 --codebook_slots 512 --codeword_dim 512 --codebook_init normal --batch_norm 0 --reset_choice 1 --num_res_blocks 4  --compress 2 --hae_lr 0.0001 --hqa_lr 0.0004  --CL_coeff 0 --visual_dir ./codebooks/ --trainbool True")
 argument_sets.append(" --batch_size 32 --Hae_epochs 30 --Hqa_epochs 10 --hae_Cos_coeff 0.1 --classifier_epochs 30 --layers 2 --input_feature_dim 32 --codebook_slots 512 --codeword_dim 512 --codebook_init normal --batch_norm 0 --reset_choice 1 --num_res_blocks 4  --compress 2 --hae_lr 0.0001 --hqa_lr 0.0004  --CL_coeff 0 --visual_dir ./codebooks/ --trainbool True")
 argument_sets.append(" --batch_size 32 --Hae_epochs 30 --Hqa_epochs 10 --hae_Cos_coeff 0.1 --classifier_epochs 30 --layers 2 --input_feature_dim 32 --codebook_slots 512 --codeword_dim 512 --codebook_init normal --batch_norm 0 --reset_choice 1 --num_res_blocks 4  --compress 2 --hae_lr 0.0001 --hqa_lr 0.0004  --CL_coeff 0 --visual_dir ./codebooks/ --trainbool True")
 argument_sets.append(" --batch_size 32 --Hae_epochs 30 --Hqa_epochs 10 --hae_Cos_coeff 0.1 --classifier_epochs 30 --layers 2 --input_feature_dim 32 --codebook_slots 512 --codeword_dim 512 --codebook_init normal --batch_norm 0 --reset_choice 1 --num_res_blocks 4  --compress 2 --hae_lr 0.0001 --hqa_lr 0.0004  --CL_coeff 0 --visual_dir ./codebooks/ --trainbool True")
 argument_sets.append(" --batch_size 32 --Hae_epochs 30 --Hqa_epochs 10 --hae_Cos_coeff 0.1 --classifier_epochs 30 --layers 2 --input_feature_dim 32 --codebook_slots 512 --codeword_dim 512 --codebook_init normal --batch_norm 0 --reset_choice 1 --num_res_blocks 4  --compress 2 --hae_lr 0.0001 --hqa_lr 0.0004  --CL_coeff 0 --visual_dir ./codebooks/ --trainbool True")
-
+'''
 
 for arguments in argument_sets: 
     command1 = f"python run_pipeline.py {arguments}"

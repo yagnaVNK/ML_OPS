@@ -38,8 +38,8 @@ if __name__ == "__main__":
     eff_net_PATH = f"./src/classifiers/{args.classifier_epochs}epochs_classifier.pt"
     enc_hidden_sizes=[16, 16, 32, 64, 128, 256]
     dec_hidden_sizes=[16, 64, 256, 512, 1024, 2048]
-    #classes = ["4ask","8pam","16psk","32qam_cross","2fsk","ofdm-256"]
-    classes = ["Anger","Disgust","Fear","Sadness","Neutral","Amusement","Inspiration","Joy","Tenderness"]
+    classes = ["4ask","8pam","16psk","32qam_cross","2fsk","ofdm-256"]
+    #classes = ["Anger","Disgust","Fear","Sadness","Neutral","Amusement","Inspiration","Joy","Tenderness"]
     training_pipeline(classes=classes,
                       iq_samples=args.iq_samples, 
                       enc_hidden_sizes=enc_hidden_sizes,
