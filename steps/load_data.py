@@ -43,7 +43,7 @@ def getDataLoader(classes: list,
         transform = data_transform
     )
 
-    dl_train = DataLoader(ds_train,batch_size=batch_size,shuffle=True)
+    dl_train = DataLoader(ds_train,batch_size=batch_size,num_workers=2,persistent_workers=True,shuffle=True)
     ds_val = ModulationsDataset(
         classes = classes,
         use_class_idx = True,
@@ -54,7 +54,7 @@ def getDataLoader(classes: list,
         transform = data_transform
     )
 
-    dl_val = DataLoader(ds_val,batch_size=batch_size,shuffle=False)
+    dl_val = DataLoader(ds_val,batch_size=batch_size,num_workers=2,persistent_workers=True,shuffle=False)
 
     ds_test = ModulationsDataset(
         classes = classes,
@@ -66,64 +66,11 @@ def getDataLoader(classes: list,
         transform = data_transform
     )
 
-    dl_test = DataLoader(ds_test,batch_size=batch_size,shuffle=False)
+    dl_test = DataLoader(ds_test,batch_size=batch_size,num_workers=2,persistent_workers=True,shuffle=False)
 
 
 
     return dl_train,ds_train,dl_test,ds_test,dl_val,ds_val
-
-
-@step(enable_cache=True)
-def getDataLoader_Adv(classes: list,
-                   iq_samples: int, 
-                   samples_per_class: int,
-                   batch_size: int) -> Tuple[
-                       Annotated[DataLoader,"train_dl"],
-                       Annotated[Adv_Dataset,"train_ds"],
-                       Annotated[DataLoader,"test_dl"],
-                       Annotated[Adv_Dataset,"test_ds"],
-                       Annotated[DataLoader,"val_dl"],
-                       Annotated[Adv_Dataset,"val_ds"],
-                        ]:
-
-    data_transform = ST.Compose([
-        ST.ComplexTo2D(),
-    ])
-    ds_train = ModulationsDataset(
-        classes = classes,
-        use_class_idx = True,
-        level=0,
-        num_iq_samples=iq_samples,
-        num_samples=int(len(classes)*samples_per_class),
-        include_snr=False,
-        transform = data_transform
-    )
-
-    dl_train = DataLoader(ds_train,batch_size=batch_size,shuffle=True)
-    ds_val = ModulationsDataset(
-        classes = classes,
-        use_class_idx = True,
-        level=0,
-        num_iq_samples=iq_samples,
-        num_samples=int(len(classes)*samples_per_class)/10,
-        include_snr=False,
-        transform = data_transform
-    )
-
-    dl_val = DataLoader(ds_val,batch_size=batch_size,shuffle=False)
-
-    ds_test = ModulationsDataset(
-        classes = classes,
-        use_class_idx = True,
-        level=0,
-        num_iq_samples=iq_samples,
-        num_samples=int(len(classes)*samples_per_class)/10,
-        include_snr=False,
-        transform = data_transform
-    )
-
-    dl_test = DataLoader(ds_test,batch_size=batch_size,shuffle=False)
-
 
 @step(enable_cache=True)
 def getDataLoader_EEG(classes: list,

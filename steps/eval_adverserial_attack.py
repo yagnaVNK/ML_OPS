@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from src.Adverserial_Dataset import AdversarialModulationsDataset as Adv_Dataset
 
+device = 'cuda'
+
 mlflow_settings = MLFlowExperimentTrackerSettings(
     nested=True,
     tags={"key": "value"}
