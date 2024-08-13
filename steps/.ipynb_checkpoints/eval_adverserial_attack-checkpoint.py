@@ -12,7 +12,11 @@ from torchsig.utils.cm_plotter import plot_confusion_matrix
 from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import MLFlowExperimentTrackerSettings
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.metrics import confusion_matrix
+
 from src.Adverserial_Dataset import AdversarialModulationsDataset as Adv_Dataset
+
+device = 'cuda'
 
 mlflow_settings = MLFlowExperimentTrackerSettings(
     nested=True,
@@ -22,6 +26,55 @@ mlflow_settings = MLFlowExperimentTrackerSettings(
 
 experiment_tracker = Client().active_stack.experiment_tracker
 print(experiment_tracker)
+
+
+
+def plot_confusion_matrix(y_true, y_pred, classes, normalize=False, title=None, cmap=plt.cm.Blues, figsize=(10, 10), **kwargs):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    cm = confusion_matrix(y_true, y_pred)
+    
+    if normalize:
+        row_sums = cm.sum(axis=1, keepdims=True)
+        row_sums[row_sums == 0] = 1  # Prevent division by zero
+        cm = cm.astype(float) / row_sums
+        cm = np.round(cm, 2)
+    
+    fig, ax = plt.subplots(figsize=figsize)
+    im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
+    ax.figure.colorbar(im, ax=ax)
+    
+    # Set tick locations and labels
+    tick_marks = np.arange(len(classes))
+    ax.set(xticks=tick_marks,
+           yticks=tick_marks,
+           xticklabels=classes,
+           yticklabels=classes,
+           title=title,
+           ylabel='True label',
+           xlabel='Predicted label')
+    
+    # Ensure tick labels match the number of ticks
+    ax.set_xticks(tick_marks)
+    ax.set_yticks(tick_marks)
+    
+    # Rotate and format the tick labels
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+    plt.setp(ax.get_yticklabels(), rotation=0, ha="right")
+
+    # Loop over data dimensions and create text annotations.
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            ax.text(j, i, format(cm[i, j], fmt),
+                    ha="center", va="center",
+                    color="white" if cm[i, j] > thresh else "black")
+    
+    fig.tight_layout()
+    plt.show()
 
 
 @step(enable_cache=False,enable_artifact_visualization=True, experiment_tracker =experiment_tracker.name,
@@ -83,6 +136,7 @@ def eval_three_models(classes: list, hae_model: HAE, hqa_model: HQA, classifier:
                 rotate_x_text=60,
                 figsize=(10, 10),
             )
+
             confusionMatrix_save_path = f"./vis/confusion_matrix_{model_name}.png"
             plt.savefig(confusionMatrix_save_path)
             mlflow.log_artifact(confusionMatrix_save_path)

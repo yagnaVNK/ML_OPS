@@ -20,18 +20,17 @@ class AdversarialModulationsDataset(Dataset):
         """
         self.original_dataset = original_dataset
         self.epsilon = epsilon
-        logger.info(f"Initialized AdversarialModulationsDataset with {len(self.original_dataset)} samples")
+        
 
     def __len__(self) -> int:
         return len(self.original_dataset)
 
     def __getitem__(self, idx: int) -> Tuple[Union[np.ndarray, torch.Tensor], Union[int, torch.Tensor]]:
         try:
-            logger.info(f"Fetching item {idx}")
+           
             
             # Load the original sample
             iq_sample, label = self._load_sample(idx)
-            logger.info(f"Original sample shape: {iq_sample.shape}, type: {type(iq_sample)}")
             
             # Ensure iq_sample is a numpy array
             if isinstance(iq_sample, torch.Tensor):
@@ -45,7 +44,6 @@ class AdversarialModulationsDataset(Dataset):
             amplitude = np.sqrt(real_part**2 + imaginary_part**2)
             angle = np.arctan2(imaginary_part, real_part)
             
-            logger.info("Applying adversarial attack")
             # Apply adversarial attack on amplitude
             attacked_amplitude = self._adversarial_attack_fn(amplitude)
             
@@ -60,7 +58,6 @@ class AdversarialModulationsDataset(Dataset):
             if isinstance(self.original_dataset[idx][0], torch.Tensor):
                 attacked_iq_sample = torch.from_numpy(attacked_iq_sample).float()
             
-            logger.info(f"Successfully processed item {idx}")
             return attacked_iq_sample, label
         except Exception as e:
             logger.error(f"Error in __getitem__ for index {idx}: {str(e)}", exc_info=True)

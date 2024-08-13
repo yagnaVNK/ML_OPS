@@ -62,6 +62,7 @@ def training_pipeline(classes: list,
                                   in_channels=input_feature_dim)
 
     # Train HAE model
+    
     HAE_model = train_HAE(dl_train=dl_train,
                           dl_val=dl_val,
                           epochs=Hae_epochs,
@@ -76,6 +77,7 @@ def training_pipeline(classes: list,
                           compress=compress,
                           Cos_coeff=hae_Cos_coeff,
                           hae_lr=hae_lr)
+    
 
     # Train HQA model
     HQA_model = train_HQA(dl_train=dl_train,
@@ -106,13 +108,13 @@ def training_pipeline(classes: list,
     accuracies_classifier = eval_classifier(classes, classifier, ds_test)
     
     
-    #ds_test_adv = create_adversarial_dataset_step(original_dataset=ds_test)
+    ds_test_adv = create_adversarial_dataset_step(original_dataset=ds_test)
     
     # New evaluation step with adversarially attacked data
-    #adversarial_eval_results = eval_three_models(classes, HAE_model, HQA_model, classifier, ds_test_adv)
+    adversarial_eval_results = eval_three_models(classes, HAE_model, HQA_model, classifier, ds_test_adv)
     
     
     # Generate constellation diagrams (if needed)
-    generate_constellations(classes, HAE_model, HQA_model, ds_test)
+    #generate_constellations(classes, HAE_model, HQA_model, ds_test)
 
-    return accuracies_classifier, accuracies_Hae, accuracies_Hqa, HAE_model, HQA_model, None
+    return accuracies_classifier, accuracies_Hae, accuracies_Hqa, HAE_model, HQA_model, adversarial_eval_results

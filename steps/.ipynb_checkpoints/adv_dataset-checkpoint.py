@@ -34,26 +34,17 @@ print(experiment_tracker)
       settings={"experiment_tracker.mlflow": mlflow_settings})
 def create_adversarial_dataset_step(original_dataset: ModulationsDataset) -> Adv_Dataset:
     try:
-        logger.info(f"Starting create_adversarial_dataset_step")
-        logger.info(f"Original dataset type: {type(original_dataset).__name__}")
-        logger.info(f"Original dataset length: {len(original_dataset)}")
-
-        # Create the adversarial dataset
-        logger.info("Creating AdversarialModulationsDataset")
+        
         adv_dataset = Adv_Dataset(original_dataset=original_dataset)
         
-        logger.info(f"AdversarialModulationsDataset created with length: {len(adv_dataset)}")
-
         # Test the dataset by accessing a few items
         for i in range(min(5, len(adv_dataset))):
             try:
                 item, label = adv_dataset[i]
-                logger.info(f"Successfully retrieved item {i}")
+                
             except Exception as e:
-                logger.error(f"Error retrieving item {i}: {str(e)}")
                 raise
 
-        logger.info("create_adversarial_dataset_step completed successfully")
         return adv_dataset
     except Exception as e:
         logger.error(f"Error in create_adversarial_dataset_step: {str(e)}", exc_info=True)

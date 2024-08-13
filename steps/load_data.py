@@ -43,8 +43,10 @@ def getDataLoader(classes: list,
         transform = data_transform
     )
 
-    dl_train = DataLoader(ds_train,batch_size=batch_size,num_workers=2,persistent_workers=True,shuffle=True)
+    dl_train = DataLoader(ds_train,batch_size=batch_size,num_workers=31,shuffle=True)
+    
     ds_val = ModulationsDataset(
+        
         classes = classes,
         use_class_idx = True,
         level=0,
@@ -54,7 +56,7 @@ def getDataLoader(classes: list,
         transform = data_transform
     )
 
-    dl_val = DataLoader(ds_val,batch_size=batch_size,num_workers=2,persistent_workers=True,shuffle=False)
+    dl_val = DataLoader(ds_val,batch_size=batch_size,num_workers=31,shuffle=False)
 
     ds_test = ModulationsDataset(
         classes = classes,
@@ -66,7 +68,7 @@ def getDataLoader(classes: list,
         transform = data_transform
     )
 
-    dl_test = DataLoader(ds_test,batch_size=batch_size,num_workers=2,persistent_workers=True,shuffle=False)
+    dl_test = DataLoader(ds_test,batch_size=batch_size,num_workers=31,shuffle=False)
 
 
 

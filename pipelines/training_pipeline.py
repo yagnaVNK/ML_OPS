@@ -62,6 +62,7 @@ def training_pipeline(classes: list,
                                   in_channels=input_feature_dim)
 
     # Train HAE model
+    
     HAE_model = train_HAE(dl_train=dl_train,
                           dl_val=dl_val,
                           epochs=Hae_epochs,
@@ -76,6 +77,7 @@ def training_pipeline(classes: list,
                           compress=compress,
                           Cos_coeff=hae_Cos_coeff,
                           hae_lr=hae_lr)
+    
 
     # Train HQA model
     HQA_model = train_HQA(dl_train=dl_train,
@@ -113,6 +115,6 @@ def training_pipeline(classes: list,
     
     
     # Generate constellation diagrams (if needed)
-    generate_constellations(classes, HAE_model, HQA_model, ds_test)
+    #generate_constellations(classes, HAE_model, HQA_model, ds_test)
 
     return accuracies_classifier, accuracies_Hae, accuracies_Hqa, HAE_model, HQA_model, adversarial_eval_results

@@ -318,9 +318,6 @@ class GlobalNormalization1(torch.nn.Module):
         return inputs
     
 
-    
-
-
 class HQA(pl.LightningModule):
     VISUALIZATION_DIR = 'vis'
     SUBDIRS=[VISUALIZATION_DIR]
@@ -597,12 +594,7 @@ class HQA(pl.LightningModule):
                 mlflow.log_artifact(plot_path)
                 self.plot_codebook_histograms(self.codebook_resets)
                 plt.close()
-        
-        self.log("loss", loss, prog_bar=True, on_step=True, on_epoch=True)
-        self.log("cos_loss", cos_loss, prog_bar=True, on_step=True, on_epoch=True)
-        self.log("recon", recon_loss, prog_bar=True, on_step=True, on_epoch=True)
-        self.log("kl", kl_loss, prog_bar=True, on_step=True, on_epoch=True)
-        self.log("commit", commit_loss, prog_bar=True, on_step=True, on_epoch=True)
+    
         self.train_outputs.update({"loss": loss, "cos_loss": cos_loss, "recon": recon_loss, "kl": kl_loss, "commit": commit_loss})
         return {"loss": loss, "cos_loss": cos_loss, "recon": recon_loss, "kl": kl_loss, "commit": commit_loss}
 
@@ -612,12 +604,6 @@ class HQA(pl.LightningModule):
         avg_recon = torch.mean(self.train_outputs['recon'])
         avg_kl = torch.mean(self.train_outputs['kl'])
         avg_commit = torch.mean(self.train_outputs['commit'])
-        
-        self.log("avg_loss", avg_loss, prog_bar=True)
-        self.log("avg_cos_loss", avg_cos_loss, prog_bar=True)
-        self.log("avg_recon", avg_recon, prog_bar=True)
-        self.log("avg_kl", avg_kl, prog_bar=True)
-        self.log("avg_commit", avg_commit, prog_bar=True)
         
         mlflow.log_metric("avg_loss", avg_loss.item(), step=self.current_epoch)
         mlflow.log_metric("avg_cos_loss", avg_cos_loss.item(), step=self.current_epoch)
@@ -670,11 +656,6 @@ class HQA(pl.LightningModule):
         x, _ = val_batch
         cos_loss, recon_loss, loss, indices, kl_loss, commit_loss = self.get_validation_loss(x)
         
-        self.log("val_loss", loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
-        self.log("val_cos_loss", cos_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
-        self.log("val_recon", recon_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
-        self.log("val_kl", kl_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
-        self.log("val_commit", commit_loss, prog_bar=False, sync_dist=True, on_step=True, on_epoch=True)
         self.val_outputs.update({"val_loss": loss, "val_cos_loss": cos_loss, "val_recon": recon_loss, "val_kl": kl_loss})
         return {"val_loss": loss, "val_cos_loss": cos_loss, "val_recon": recon_loss, "val_kl": kl_loss,}
 
@@ -684,12 +665,6 @@ class HQA(pl.LightningModule):
         avg_recon = torch.mean(self.val_outputs['val_recon'])
         avg_kl = torch.mean(self.val_outputs['val_kl'])
         
-        self.log("avg_val_loss", avg_loss, prog_bar=True, sync_dist=True)
-        self.log("avg_val_cos_loss", avg_cos_loss, prog_bar=True, sync_dist=True)
-        self.log("avg_val_recon", avg_recon, prog_bar=True, sync_dist=True)
-        self.log("avg_val_kl", avg_kl, prog_bar=True, sync_dist=True)
-        
-        
         mlflow.log_metric("avg_val_loss", avg_loss.item(), step=self.current_epoch)
         mlflow.log_metric("avg_val_cos_loss", avg_cos_loss.item(), step=self.current_epoch)
         mlflow.log_metric("avg_val_recon", avg_recon.item(), step=self.current_epoch)
@@ -698,10 +673,6 @@ class HQA(pl.LightningModule):
     def test_step(self, test_batch, batch_idx):
         x,_ = test_batch
         cos_loss, recon_loss, loss, indices, kl_loss, commit_loss = self.get_validation_loss(x)
-        self.log("tst_loss", loss, prog_bar=False)
-        self.log("tst_cos_loss", cos_loss, prog_bar=False)
-        self.log("tst_recon", recon_loss, prog_bar=False)
-        self.log("tst_kl", kl_loss, prog_bar=False)
         return loss    
 
     
