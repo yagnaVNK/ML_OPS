@@ -28,7 +28,6 @@ experiment_tracker = Client().active_stack.experiment_tracker
 print(experiment_tracker)
 
 
-
 def plot_confusion_matrix(y_true, y_pred, classes, normalize=False, title=None, cmap=plt.cm.Blues, figsize=(10, 10), **kwargs):
     """
     This function prints and plots the confusion matrix.
@@ -56,10 +55,6 @@ def plot_confusion_matrix(y_true, y_pred, classes, normalize=False, title=None, 
            ylabel='True label',
            xlabel='Predicted label')
     
-    # Ensure tick labels match the number of ticks
-    ax.set_xticks(tick_marks)
-    ax.set_yticks(tick_marks)
-    
     # Rotate and format the tick labels
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
     plt.setp(ax.get_yticklabels(), rotation=0, ha="right")
@@ -77,7 +72,7 @@ def plot_confusion_matrix(y_true, y_pred, classes, normalize=False, title=None, 
     plt.show()
 
 
-@step(enable_cache=False,enable_artifact_visualization=True, experiment_tracker =experiment_tracker.name,
+@step(enable_cache=False, enable_artifact_visualization=True, experiment_tracker=experiment_tracker.name,
       settings={
         "experiment_tracker.mlflow": mlflow_settings
     })
@@ -85,8 +80,17 @@ def eval_three_models(classes: list, hae_model: HAE, hqa_model: HQA, classifier:
     """
     Evaluate HAE, HQA, and Classifier models on the adversarially attacked dataset.
     """
-    results = {"HAE": [], "HQA": [], "Classifier": []}
-    models = {"HAE": hae_model, "HQA": hqa_model, "Classifier": classifier}
+    results = {}
+    models = {}
+    layers = len(hae_model)
+    for i in range(layers):
+        models[f'HAE layer {i}'] = hae_model[i]
+        models[f'HQA layer {i}'] = hqa_model[i]
+        results[f'HAE layer {i}'] = []
+        results[f'HQA layer {i}'] = []
+
+    models["Classifier"] = classifier
+    results["Classifier"] = []
     
     # Run evaluations for each model
     for model_name, model in models.items():
@@ -107,10 +111,9 @@ def eval_three_models(classes: list, hae_model: HAE, hqa_model: HQA, classifier:
                 data, label = ds_test[i]
                 data = torch.from_numpy(np.expand_dims(data, 0)).float().to(device)
                 
-                if model_name == "HAE":
-                    output = model.reconstruct(data)
-                elif model_name == "HQA":
-                    output = model.reconstruct(data)
+                if "HAE" in model_name or "HQA" in model_name:
+                    classifier = classifier.to(device)
+                    output = classifier.predict(model.reconstruct(data))
                 elif model_name == "Classifier":
                     output = model.predict(data)
                 
@@ -118,10 +121,21 @@ def eval_three_models(classes: list, hae_model: HAE, hqa_model: HQA, classifier:
                 pred = output.cpu().detach().numpy() if torch.cuda.is_available() else output
                 y_preds[i] = np.argmax(pred)
                 y_true[i] = label
+
             
-            # Calculate accuracy
-            acc = np.sum(np.asarray(y_preds) == np.asarray(y_true)) / len(y_true)
+            correct_predictions = 0
+            print(f"set of true labels {set(y_true)}")
+            print(f"set of predicted labels {set(y_preds)}")
+            for pred, true in tqdm(zip(y_preds, y_true), total=len(y_true), desc="Calculating Accuracy"):
+                if pred == true:
+                    correct_predictions += 1
+            
+            # Calculate the accuracy
+            acc = correct_predictions / len(y_true)
+            print(f"Accuracy: {acc:.2f}")
             accuracies.append(acc * 100)
+            
+            
             
             mlflow.log_metric(f"{model_name}_accuracy", acc * 100)
             
@@ -132,9 +146,7 @@ def eval_three_models(classes: list, hae_model: HAE, hqa_model: HQA, classifier:
                 classes=classes,
                 normalize=True,
                 title=f"{model_name} Confusion Matrix\nTotal Accuracy: {acc * 100:.2f}%",
-                text=False,
-                rotate_x_text=60,
-                figsize=(10, 10),
+                figsize=(10, 10)
             )
 
             confusionMatrix_save_path = f"./vis/confusion_matrix_{model_name}.png"

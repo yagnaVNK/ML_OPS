@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument('--CL_coeff', type=float, default=0.005)
     parser.add_argument('--visual_dir', type=str, default='./codebooks/')
     parser.add_argument('--trainbool', type=bool, default=True)
+    parser.add_argument('--epsilon', type=float, default=0.1)
 
     return parser.parse_args()
 
@@ -68,4 +69,5 @@ if __name__ == "__main__":
                       visual_dir=args.visual_dir,
                       eff_net_path=eff_net_PATH,
                       trainbool=args.trainbool,
+                      epsilon=args.epsilon,
                       )

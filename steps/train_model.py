@@ -33,6 +33,7 @@ def train_HAE(dl_train: DataLoader,
               num_res_blocks: int,
               cos_reset: int,
               compress: int,
+              train_flag: bool,
               hae_lr:float) -> HAE:
     """
 
@@ -57,6 +58,7 @@ def train_HAE(dl_train: DataLoader,
                 compress = compress,
                 codebook_dim = codeword_dim,
                 Cos_coeff = Cos_coeff,
+                train_flag = train_flag,
                 lr=hae_lr
             )
             
@@ -72,6 +74,7 @@ def train_HAE(dl_train: DataLoader,
                 compress = compress,
                 codebook_dim = codeword_dim,
                 Cos_coeff = Cos_coeff,
+                train_flag = train_flag,
                 lr=hae_lr
             )
         

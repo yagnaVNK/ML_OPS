@@ -38,6 +38,7 @@ def training_pipeline(classes: list,
                       CL_coeff: float,
                       visual_dir: str,
                       eff_net_path: str,
+                      epsilon: float,
                       trainbool: bool) -> Tuple[Annotated[list, "classifier_Accuracies"],
                                                Annotated[list, "HAE_Accuracies"],
                                                Annotated[list, "HQA_Accuracies"],
@@ -102,16 +103,18 @@ def training_pipeline(classes: list,
                           model=HAE_model,
                           hqa_lr=hqa_lr)
 
+    
+    print("running in the pipeline")
+    ds_test_adv = create_adversarial_dataset_step(original_dataset=ds_test, classifier_model=classifier, epsilon=epsilon)
+    
+    # New evaluation step with adversarially attacked data
+    adversarial_eval_results = eval_three_models(classes, HAE_model, HQA_model, classifier, ds_test_adv)
+        
     # Original evaluation steps
     accuracies_Hae = eval_HAE(classes, HAE_model, classifier, ds_test)
     accuracies_Hqa = eval_HQA(classes, HQA_model, classifier, ds_test)
     accuracies_classifier = eval_classifier(classes, classifier, ds_test)
     
-    
-    ds_test_adv = create_adversarial_dataset_step(original_dataset=ds_test)
-    
-    # New evaluation step with adversarially attacked data
-    adversarial_eval_results = eval_three_models(classes, HAE_model, HQA_model, classifier, ds_test_adv)
     
     
     # Generate constellation diagrams (if needed)

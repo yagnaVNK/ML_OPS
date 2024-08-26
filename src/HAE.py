@@ -265,6 +265,7 @@ class HAE(pl.LightningModule):
         Cos_coeff = 0.7,
         batch_norm = 1,
         cos_reset = 1,
+        train_flag = False,
         compress = 2,
     ):
         super().__init__()
@@ -293,6 +294,7 @@ class HAE(pl.LightningModule):
         self.normalize = GlobalNormalization1(codebook_dim, scale=True)
         self.out_feat_dim = input_feat_dim
         self.codebook_dim = codebook_dim
+        self.train_flag = train_flag
         self.lr = lr
         self.decay = decay
         self.clip_grads = clip_grads

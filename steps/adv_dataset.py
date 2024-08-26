@@ -15,7 +15,7 @@ import numpy as np
 from src.Adverserial_Dataset import AdversarialModulationsDataset as Adv_Dataset
 from torchsig.datasets.modulations import ModulationsDataset
 import logging
-
+from src.efficientNet_classifer import *
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -31,19 +31,15 @@ experiment_tracker = Client().active_stack.experiment_tracker
 print(experiment_tracker)
 
 @step(enable_cache=False, enable_artifact_visualization=True, experiment_tracker=experiment_tracker.name,
-      settings={"experiment_tracker.mlflow": mlflow_settings})
-def create_adversarial_dataset_step(original_dataset: ModulationsDataset) -> Adv_Dataset:
+      settings={
+        "experiment_tracker.mlflow": mlflow_settings
+    })
+def create_adversarial_dataset_step(original_dataset: ModulationsDataset, classifier_model: ExampleNetwork, epsilon: float) -> Adv_Dataset:
     try:
-        
-        adv_dataset = Adv_Dataset(original_dataset=original_dataset)
-        
-        # Test the dataset by accessing a few items
-        for i in range(min(5, len(adv_dataset))):
-            try:
-                item, label = adv_dataset[i]
-                
-            except Exception as e:
-                raise
+        # Log the epsilon value to MLflow
+        mlflow.log_param("epsilon",str(epsilon))
+        adv_dataset = Adv_Dataset(original_dataset=original_dataset, classifier_model=classifier_model, epsilon=epsilon)
+        print("created dataset")
 
         return adv_dataset
     except Exception as e:
